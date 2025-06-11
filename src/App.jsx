@@ -1,12 +1,31 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import PrivateRoute from './routes/PrivateRoute';
+import RoleLayout from './layout/RoleLayout';
+
 import Login from './pages/auth/Login';
 import RegisterSiswa from './pages/auth/RegisterSiswa';
 import RegisterGuru from './pages/auth/RegisterGuru';
-import AdminDashboard from './pages/admin/Dashboard';
-import GuruDashboard from './pages/guru/Dashboard';
-import SiswaDashboard from './pages/siswa/Dashboard';
 import ForgotPassword from "./pages/auth/ForgotPassword";
+import ProfilePage from "./pages/general/ProfilePage";
+
+// Halaman admin
+import AdminDashboard from './pages/admin/Dashboard';
+import ManajemenSiswa from './pages/admin/ManajemenSiswa';
+import ManajemenKelas from './pages/admin/ManajemenKelas';
+import ManajemenMapel from './pages/admin/ManajemenMapel';
+import ManajemenSoal from './pages/admin/ManajemenSoal';
+import SoalDetail from './pages/admin/SoalDetail';
+
+// Halaman guru
+import GuruDashboard from './pages/guru/Dashboard';
+import AktivasiUjian from './pages/guru/AktivasiUjian';
+import UjianAktifGuru from './pages/guru/UjianAktifGuru';
+import PantauUjian from './pages/guru/PantauUjian';
+import RekapNilai from './pages/guru/RekapNilai';
+
+// Halaman siswa
+import SiswaDashboard from './pages/siswa/Dashboard';
+import UjianPage from './pages/siswa/UjianPage';
 
 function App() {
   return (
@@ -17,21 +36,52 @@ function App() {
         <Route path="/register/guru" element={<RegisterGuru />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        <Route path="/admin/*" element={
+        {/* ADMIN */}
+        <Route path="/admin" element={
           <PrivateRoute role="admin">
-            <AdminDashboard />
+            <RoleLayout />
           </PrivateRoute>
-        } />
-        <Route path="/guru/*" element={
+        }>
+          <Route index element={<AdminDashboard />} />
+          <Route path="profile" element={<ProfilePage />} />
+          <Route path="siswa" element={<ManajemenSiswa />} />
+          <Route path="kelas" element={<ManajemenKelas />} />
+          <Route path="mapel" element={<ManajemenMapel />} />
+          <Route path="soal" element={<ManajemenSoal />} />
+          <Route path="soal/:id/detail" element={<SoalDetail />} />
+        </Route>
+
+        {/* GURU */}
+        <Route path="/guru" element={
           <PrivateRoute role="guru">
-            <GuruDashboard />
+            <RoleLayout />
           </PrivateRoute>
-        } />
-        <Route path="/siswa/*" element={
+        }>
+          <Route index element={<GuruDashboard />} />
+          <Route path="profile" element={<ProfilePage />} />
+          <Route path="aktivasi" element={<AktivasiUjian />} />
+          <Route path="ujian-aktif" element={<UjianAktifGuru />} />
+          <Route path="pantau-ujian" element={<PantauUjian />} />
+          <Route path="soal" element={<ManajemenSoal />} />
+          <Route path="soal/:id/detail" element={<SoalDetail />} />
+          <Route path="nilai" element={<RekapNilai />} />
+        </Route>
+
+        {/* SISWA */}
+        <Route path="/siswa" element={
           <PrivateRoute role="siswa">
-            <SiswaDashboard />
+            <RoleLayout />
           </PrivateRoute>
-        } />
+        }>
+          <Route index element={<SiswaDashboard />} />
+          <Route path="profile" element={<ProfilePage />} />
+        </Route>
+        <Route path="/siswa/ujian/:id" element={
+          <PrivateRoute role="siswa">
+            <UjianPage />
+          </PrivateRoute>
+        }>
+        </Route>
       </Routes>
     </Router>
   );

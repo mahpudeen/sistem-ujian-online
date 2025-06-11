@@ -7,16 +7,36 @@ import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "../../firebase";
 import { useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { getDocs, collection } from "firebase/firestore";
+import { useEffect } from "react";
 
 export default function RegisterSiswa() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nama, setNama] = useState("");
-  const [kelas, setKelas] = useState("7A");
+  const [kelas, setKelas] = useState("");
   const toast = useToast();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [subkelasList, setSubkelasList] = useState([]);
 
+  useEffect(() => {
+    const fetchSubkelas = async () => {
+      const snapshot = await getDocs(collection(db, "subkelas"));
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  
+      data.sort((a, b) => {
+        const [numA, letterA] = a.nama.match(/(\d+)([A-Z])/).slice(1);
+        const [numB, letterB] = b.nama.match(/(\d+)([A-Z])/).slice(1);
+        return numA === numB ? letterA.localeCompare(letterB) : Number(numA) - Number(numB);
+      });
+  
+      setSubkelasList(data);
+    };
+  
+    fetchSubkelas();
+  }, []);
+  
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
@@ -28,8 +48,7 @@ export default function RegisterSiswa() {
         email,
         nama,
         kelas,
-        role: "siswa",
-        status: "pending"
+        role: "siswa"
       });
 
       toast({ title: "Registrasi berhasil", description: "Silakan login.", status: "success" });
@@ -101,11 +120,11 @@ export default function RegisterSiswa() {
             focusBorderColor="teal.500"
             _hover={{ borderColor: 'teal.300' }}
           >
-            <option value="7A">7A</option>
-            <option value="7B">7B</option>
-            <option value="8A">8A</option>
-            <option value="9A">9A</option>
+            {subkelasList.map(sub => (
+              <option key={sub.id} value={sub.nama}>{sub.nama}</option>
+            ))}
           </Select>
+
           <Button
             colorScheme="teal"
             size="md"

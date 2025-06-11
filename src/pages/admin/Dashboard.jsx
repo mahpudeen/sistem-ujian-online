@@ -1,3 +1,3 @@
-export default function Dashboard() {
-  return <h1>Dashboard Guru</h1>;
+export default function AdminDashboard() {
+  return <h1>Selamat datang, Admin!</h1>;
 }

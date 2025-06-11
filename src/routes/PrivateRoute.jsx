@@ -1,9 +1,9 @@
 import { Navigate } from 'react-router-dom';
-import { useAuthContext } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import { Spinner, Center } from "@chakra-ui/react";
 
 export default function PrivateRoute({ children, role }) {
-  const { user, loading } = useAuthContext();
+  const { user, loading } = useAuth();
 
   if (loading) {
     return <Center><Spinner size="lg" /></Center>;

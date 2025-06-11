@@ -1,14 +1,13 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useState } from "react";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
 
-// Buat context
 const AuthContext = createContext();
 
-// Provider
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);   // custom user data (dari Firestore)
+  const [user, setUser] = useState(null); // Berisi user Firestore + uid
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,7 +17,7 @@ export function AuthProvider({ children }) {
         if (userDoc.exists()) {
           setUser({ uid: firebaseUser.uid, ...userDoc.data() });
         } else {
-          setUser(null); // akun belum punya user doc
+          setUser(null);
         }
       } else {
         setUser(null);
@@ -29,15 +28,15 @@ export function AuthProvider({ children }) {
     return () => unsubscribe();
   }, []);
 
+  const logout = () => signOut(auth);
+
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, role: user?.role || null, loading, logout }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-// Hook custom
-// eslint-disable-next-line react-refresh/only-export-components
-export function useAuthContext() {
+export function useAuth() {
   return useContext(AuthContext);
 }

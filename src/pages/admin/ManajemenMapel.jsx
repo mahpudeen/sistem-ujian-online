@@ -27,7 +27,10 @@ export default function ManajemenMapel() {
   };
 
   const handleSubmit = async () => {
-    if (!formData.kodeMapel || !formData.nama) return;
+    if (!formData.kodeMapel || !formData.nama)  {
+      toast({ title: "Nama & Kode wajib diisi", status: "warning" });
+      return;
+    };
     await addDoc(mapelRef, formData);
     toast({ title: "Mapel ditambahkan", status: "success" });
     setFormData({ kodeMapel: "", nama: "" });

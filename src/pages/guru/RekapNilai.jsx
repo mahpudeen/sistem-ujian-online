@@ -1,20 +1,23 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import {
-  Box, Heading, Select, Table, Thead, Tbody, Tr, Th, Td, Text, Button
+  Box, Heading, Select, Table, Thead, Tbody, 
+  Tr, Th, Td, Text, Button, useToast, Flex, Tag, IconButton, Tooltip
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
 import { db } from "../../firebase";
 import { format } from "date-fns";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-
+import { Link } from "react-router-dom";
+import { AiOutlineEye } from 'react-icons/ai'
 export default function RekapNilai() {
   const [ujianList, setUjianList] = useState([]);
   const [ujianId, setUjianId] = useState("");
   const [ujianName, setUjianName] = useState("");
   const [rekapList, setRekapList] = useState([]);
   const [jumlahSoal, setJumlahSoal] = useState(0);
+  const toast = useToast();
 
   useEffect(() => {
     fetchUjian();
@@ -113,6 +116,17 @@ export default function RekapNilai() {
     const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
     saveAs(blob, `Rekap-Nilai-${ujianName}.xlsx`);
   };  
+
+  const publishNilai = async () => {
+    const snap = await getDocs(collection(db, "jawaban"));
+    const batch = snap.docs.filter(d => d.data().ujianId === ujianId);
+  
+    for (const docSnap of batch) {
+      await updateDoc(doc(db, "jawaban", docSnap.id), { published: true });
+    }
+  
+    toast({ title: "Nilai dipublikasikan ke siswa", status: "success" });
+  };
   
   const handleSetUjianId = (e) => {
     const selectedIndex = e.target.selectedIndex;
@@ -138,14 +152,20 @@ export default function RekapNilai() {
       >
         {ujianList.map((u) => (
           <option key={u.id} value={u.id}>
-            {u.soalKode} - {u.kelas.join(", ")}
+            {u.soalKode} - {u.soalNama} - {u.kelas.join(", ")}
           </option>
         ))}
       </Select>
 
       {rekapList.length > 0 && (
         <>
-          <Button colorScheme="blue" mb={4} onClick={exportExcel}>Export ke Excel</Button>
+          <Flex gap={2}>
+            <Button colorScheme="blue" mb={4} onClick={exportExcel}>Export ke Excel</Button>
+            <Button colorScheme="green" ml={3} mb={4} onClick={publishNilai}>
+              Publikasikan Nilai ke Siswa
+            </Button>
+          </Flex>
+
           <Table>
             <Thead>
               <Tr>
@@ -155,6 +175,8 @@ export default function RekapNilai() {
                 <Th>Benar</Th>
                 <Th>Jumlah Soal</Th>
                 <Th>Waktu Submit</Th>
+                <Th>Status Publikasi</Th>
+                <Th>Aksi</Th>
               </Tr>
             </Thead>
             <Tbody>
@@ -166,6 +188,20 @@ export default function RekapNilai() {
                   <Td>{r.benar}</Td>
                   <Td>{jumlahSoal}</Td>
                   <Td>{r.submitAt ? format(r.submitAt, "dd/MM/yyyy HH:mm") : "-"}</Td>
+                  <Td>
+                    {r.published ? <Tag colorScheme="green">Dipublikasikan</Tag> : <Tag colorScheme="gray">Draft</Tag>}
+                  </Td>
+                  <Td>
+                    <Tooltip label="Lihat Jawaban">
+                      <IconButton
+                        as={Link}
+                        to={`/guru/review/${ujianId}/${r.userId}`}
+                        icon={<AiOutlineEye />}
+                        colorScheme="blue"
+                        size="sm"
+                      />
+                    </Tooltip>
+                  </Td>
                 </Tr>
               ))}
             </Tbody>

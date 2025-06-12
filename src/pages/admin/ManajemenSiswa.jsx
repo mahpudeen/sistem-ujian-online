@@ -7,7 +7,7 @@ import {
 import { AddIcon, EditIcon, DeleteIcon } from "@chakra-ui/icons";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import {
-  collection, getDocs, doc, updateDoc, deleteDoc, addDoc
+  collection, getDocs, doc, updateDoc, deleteDoc, setDoc
 } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { db, secondaryAuth } from "../../firebase";
@@ -62,7 +62,10 @@ export default function ManajemenSiswa() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSubmit = async () => {
-    if (!formData.nama || !formData.email || !formData.kelas) return;
+    if (!formData.nama || !formData.email || !formData.kelas)  {
+      toast({ title: "Nama, Email & Kelas wajib diisi", status: "warning" });
+      return;
+    };;
 
     const emailExists = siswaList.some(
       s => s.email === formData.email && s.id !== editId
@@ -83,12 +86,13 @@ export default function ManajemenSiswa() {
         await updateDoc(doc(db, "users", editId), formData);
         toast({ title: "Data diperbarui", status: "success" });
       } else {
-        await createUserWithEmailAndPassword(secondaryAuth, formData.email, "password123");
+        const result = await createUserWithEmailAndPassword(secondaryAuth, formData.email, "password123");
 
-        await addDoc(siswaRef, {
+        await setDoc(doc(db, "users", result.user.uid), {
           ...formData,
-          role: "siswa",
+          role: "siswa"
         });
+
         toast({
           title: "Siswa berhasil ditambahkan",
           description: "Password default: password123",

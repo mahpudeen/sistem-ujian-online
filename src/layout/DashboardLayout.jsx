@@ -26,6 +26,7 @@ export default function DashboardLayout({ children }) {
       />
       <Navbar
         onToggleSidebar={toggleSidebar}
+        role={role}
         collapsed={collapsed}
         sidebarWidth={sidebarWidth}
       />

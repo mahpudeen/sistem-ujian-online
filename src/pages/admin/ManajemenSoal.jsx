@@ -7,6 +7,7 @@ import {
 import { useEffect, useState } from "react";
 import { AiFillEdit, AiFillDelete } from "react-icons/ai";
 import { MdLibraryBooks } from "react-icons/md";
+import { BsArchive } from "react-icons/bs";
 import { Link } from "react-router-dom";
 import { db } from "../../firebase";
 import {
@@ -28,7 +29,7 @@ export default function ManajemenSoal() {
   const [editId, setEditId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-  
+
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -36,16 +37,27 @@ export default function ManajemenSoal() {
 
   useEffect(() => {
     fetchAll();
-  });
+  }, []);
 
   const fetchAll = async () => {
     const soalSnap = await getDocs(soalRef);
     const kelasSnap = await getDocs(collection(db, "kelasUtama"));
     const mapelSnap = await getDocs(collection(db, "mapel"));
 
-    setSoalList(soalSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    const allSoal = soalSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const allMapel = mapelSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    let filteredSoal = allSoal.filter(s => !s.arsip);
+    let filteredMapel = allMapel;
+
+    if (user.role === "guru") {
+      filteredSoal = filteredSoal.filter(s => user.mapel?.includes(s.mapel));
+      filteredMapel = allMapel.filter(m => user.mapel?.includes(m.id));
+    }
+
+    setSoalList(filteredSoal);
     setKelasList(kelasSnap.docs.map(doc => doc.data().nama));
-    setMapelList(mapelSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    setMapelList(filteredMapel);
   };
 
   const handleChange = e =>
@@ -54,10 +66,10 @@ export default function ManajemenSoal() {
   const generateKode = () => {
     const thn = formData.tahunPelajaran;
     const mapel = mapelList.find(m => m.id === formData.mapel)?.kodeMapel || "???";
-    return `${thn}-${mapel}-${formData.kelas}-${formData.type}`;
+    const random = Math.floor(Math.random() * 900) + 100; 
+    return `${mapel}-${formData.kelas}-${thn}-${formData.type}-${random}`;
   };
 
-  
   const handleSubmit = async () => {
     const selectedMapel = mapelList.find(m => m.id === formData.mapel);
     const kode = generateKode();
@@ -90,18 +102,17 @@ export default function ManajemenSoal() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Yakin hapus soal?")) return;
-    await deleteDoc(doc(db, "soal", id));
-    toast({ title: "Soal dihapus", status: "info" });
+  const handleArchive = async (id) => {
+    if (!window.confirm("Arsipkan soal ini?")) return;
+    await updateDoc(doc(db, "soal", id), { arsip: true });
+    toast({ title: "Soal diarsipkan", status: "info" });
     fetchAll();
   };
 
   const tahunOptions = (() => {
     const startYear = 2025;
-    const currentYear = new Date().getFullYear(); // Get the current year dynamically
-    const endYearInclusive = currentYear + 1; // Go up to current year + 1
-  
+    const currentYear = new Date().getFullYear();
+    const endYearInclusive = currentYear + 1;
     const result = [];
     for (let i = startYear; i <= endYearInclusive; i++) {
       const start = i;
@@ -179,7 +190,6 @@ export default function ManajemenSoal() {
                     to={`/${user.role}/soal/${s.id}/detail`}
                   />
                 </Tooltip>
-
                 <Tooltip label="Edit Soal">
                   <IconButton
                     icon={<AiFillEdit />}
@@ -199,12 +209,12 @@ export default function ManajemenSoal() {
                     }}
                   />
                 </Tooltip>
-                <Tooltip label="Delete Soal">
+                <Tooltip label="Archive Soal">
                   <IconButton
-                    icon={<AiFillDelete />}
+                    icon={<BsArchive />}
                     size="sm"
-                    colorScheme="red"
-                    onClick={() => handleDelete(s.id)}
+                    colorScheme="orange"
+                    onClick={() => handleArchive(s.id)}
                   />
                 </Tooltip>
               </Td>
@@ -212,6 +222,7 @@ export default function ManajemenSoal() {
           ))}
         </Tbody>
       </Table>
+
       <Box mt={4} display="flex" justifyContent="center" alignItems="center" gap={4}>
         <Button
           onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
@@ -227,7 +238,6 @@ export default function ManajemenSoal() {
           Selanjutnya
         </Button>
       </Box>
-
 
       {/* Modal Tambah Soal */}
       <Modal isOpen={isOpen} onClose={onClose}>

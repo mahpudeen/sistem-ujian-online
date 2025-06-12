@@ -10,6 +10,7 @@ import {
   doc, getDoc, collection, getDocs, setDoc, serverTimestamp, updateDoc
 } from "firebase/firestore";
 import { useAuth } from "../../context/AuthContext";
+import { useBeforeUnload } from "react-router-dom";
 
 export default function UjianPage() {
   const { id } = useParams(); // ujianAktifId
@@ -154,6 +155,27 @@ export default function UjianPage() {
     return () => window.removeEventListener("keydown", blockKey);
   }, []);
 
+  // Deteksi keluar halaman atau refresh
+  useEffect(() => {
+    const handleUnload = async (e) => {
+      if (selesai || !user) return;
+
+      // Cegah reload / keluar tanpa konfirmasi (opsional)
+      e.preventDefault();
+      e.returnValue = "";
+
+      // Kirim warning ke Firestore
+      await updateDoc(doc(db, "logUjianAktif", id, "monitoring", user.uid), {
+        warning: `Keluar halaman / reload`,
+        tabSwitchCount: tabSwitchCount + 1,
+        waktuTerakhirAktif: serverTimestamp()
+      });
+    };
+
+    window.addEventListener("beforeunload", handleUnload);
+    return () => window.removeEventListener("beforeunload", handleUnload);
+  }, [user, selesai, tabSwitchCount]);
+
   const autoSaveJawaban = async (newJawaban) => {
     if (!user || selesai) return;
     await setDoc(doc(db, "jawaban", `${user.uid}_${id}`), {
@@ -209,6 +231,16 @@ export default function UjianPage() {
     const s = seconds % 60;
     return `${m}:${s < 10 ? "0" : ""}${s}`;
   };
+
+  useBeforeUnload(() => {
+    if (!selesai && user) {
+      updateDoc(doc(db, "logUjianAktif", id, "monitoring", user.uid), {
+        warning: `Pindah halaman`,
+        tabSwitchCount: tabSwitchCount + 1,
+        waktuTerakhirAktif: serverTimestamp()
+      });
+    }
+  });
 
   return (
     <Box p={4}>

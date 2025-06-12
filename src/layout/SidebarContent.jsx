@@ -7,38 +7,8 @@ import {
   Box,
 } from "@chakra-ui/react";
 import { Link, useLocation } from "react-router-dom";
+import { menuByRole } from "./menu"; // adjust path based on your project structure
 
-// Icons
-import { 
-  FiHome, FiUsers, FiUserCheck, FiFileText, 
-  FiBook, FiCheckCircle, FiClipboard, FiLayers , FiClock
-} from "react-icons/fi";
-
-const menuByRole = {
-  admin: [
-    { label: "Dashboard", path: "/admin", icon: FiHome },
-    { label: "Manajemen Siswa", path: "/admin/siswa", icon: FiUsers },
-    { label: "Manajemen Guru", path: "/admin/guru", icon: FiUserCheck },
-    { label: "Manajemen Soal", path: "/admin/soal", icon: FiFileText },
-    { label: "Manajemen Kelas", path: "/admin/kelas", icon: FiLayers },
-    { label: "Manajemen Mapel", path: "/admin/mapel", icon: FiBook },
-    { label: "Hasil Ujian", path: "/admin/nilai", icon: FiCheckCircle },
-    { label: "Audit Log", path: "/admin/audit", icon: FiClipboard },
-  ],
-  guru: [
-    { label: "Dashboard", path: "/guru", icon: FiHome },
-    { label: "Soal", path: "/guru/soal", icon: FiFileText },
-    { label: "Aktivasi Ujian", path: "/guru/aktivasi", icon: FiCheckCircle },
-    { label: "Ujian Aktif", path: "/guru/ujian-aktif", icon: FiClock },
-    { label: "Pantau Ujian", path: "/guru/pantau-ujian", icon: FiUsers },
-    { label: "Hasil Ujian", path: "/guru/nilai", icon: FiClipboard },
-  ],
-  siswa: [
-    { label: "Dashboard", path: "/siswa", icon: FiHome },
-    { label: "Daftar Ujian", path: "/siswa/ujian", icon: FiFileText },
-    { label: "Nilai", path: "/siswa/nilai", icon: FiCheckCircle },
-  ],
-};
 // Tambahkan prop collapsed
 export default function SidebarContent({ role, onClose, collapsed = false }) {
   const location = useLocation();

@@ -13,13 +13,19 @@ import {
 } from "@chakra-ui/react";
 import { HamburgerIcon } from "@chakra-ui/icons";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { menuByRole } from "./menu"; // adjust path based on your project structure
 
-export default function Navbar({ onToggleSidebar, sidebarWidth }) {
+export default function Navbar({ onToggleSidebar, sidebarWidth, role }) {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
   const isMobile = useBreakpointValue({ base: true, md: false });
 
+  const location = useLocation();
+  const menu = menuByRole[role] || [];
+  const currentItem = menu.find(item => item.path === location.pathname);
+  const pageTitle = currentItem?.label || "Dashboard";
+  
   const handleLogout = async () => {
     await logout();
     navigate("/");
@@ -53,8 +59,9 @@ export default function Navbar({ onToggleSidebar, sidebarWidth }) {
           aria-label="Toggle Sidebar"
         />
       )}
+      
+      <Text fontWeight="bold">{pageTitle}</Text>
 
-      <Text fontWeight="bold">Admin Dashboard</Text>
       <Spacer />
 
       <Menu>
@@ -67,7 +74,7 @@ export default function Navbar({ onToggleSidebar, sidebarWidth }) {
         />
         <MenuList>
           <Box px={3} py={1}>
-            <Text fontSize="sm" color="gray.500">{user?.nama} - {user?.kelas}</Text>
+            <Text fontSize="sm" color="gray.500">{user?.nama} {user.kelas ? ' - '+ user.kelas : ' - '+user.role}</Text>
             <Text fontSize="sm" color="gray.500">{user?.email}</Text>
           </Box>
           <hr />

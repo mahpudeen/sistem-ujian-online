@@ -7,8 +7,10 @@ import { useEffect, useState } from "react";
 import { collection, getDocs, addDoc, Timestamp } from "firebase/firestore";
 import { db } from "../../firebase";
 import formatTahun from 'utilities/formatTahun';
+import { useAuth } from "../../context/AuthContext";
 
 export default function AktivasiUjian() {
+  const { user } = useAuth();
   const [soalList, setSoalList] = useState([]);
   const [subkelasList, setSubkelasList] = useState([]);
   const [selectedSoal, setSelectedSoal] = useState(null);
@@ -45,12 +47,13 @@ export default function AktivasiUjian() {
       soalId: selectedSoal.id,
       soalKode: selectedSoal.kode,
       soalNama: selectedSoal.nama,
+      mapel: selectedSoal.mapelNama,
       kelas: kelasTerpilih,
       mulai: mulaiTS,
       selesai: selesaiTS,
       durasiMenit: durasi,
       aktif: true,
-      createdBy: "uid-guru-placeholder" // nanti diganti uid login
+      createdBy: user.uid
     });
 
     toast({ title: "Ujian berhasil diaktifkan", status: "success" });

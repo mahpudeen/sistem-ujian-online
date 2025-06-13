@@ -28,8 +28,20 @@ export default function AktivasiUjian() {
     const soalSnap = await getDocs(collection(db, "soal"));
     const subkelasSnap = await getDocs(collection(db, "subkelas"));
 
-    setSoalList(soalSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-    const sortedSubkelas = subkelasSnap.docs.map(d => d.data()).sort((a, b) => a.nama.localeCompare(b.nama));
+    let allSoal = soalSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    allSoal = allSoal.filter(s => !s.arsip);
+    if (user.role === "guru") {
+      allSoal = allSoal.filter(s => user.mapel?.includes(s.mapel));
+    }
+    setSoalList(allSoal);
+
+    let allSubkelas = subkelasSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    if (user.role === "guru") {
+      allSubkelas = allSubkelas.filter(s => user.subkelas?.includes(s.id));
+    }
+    const sortedSubkelas = allSubkelas.sort((a, b) => a.nama.localeCompare(b.nama));
     setSubkelasList(sortedSubkelas);
   };
 

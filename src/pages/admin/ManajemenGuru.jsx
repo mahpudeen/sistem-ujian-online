@@ -15,8 +15,8 @@ import { db, secondaryAuth } from "../../firebase";
 export default function ManajemenGuru() {
   const [guruList, setGuruList] = useState([]);
   const [formData, setFormData] = useState({
-    nama: "", email: "", mapel: [], subkelas: []
-  });  
+    nama: "", email: "", mapel: [], mapel_name: [], subkelas: []
+  });
   const [editId, setEditId] = useState(null);
   const [mapelList, setMapelList] = useState([]);
   const [subkelasList, setSubkelasList] = useState([]);
@@ -58,7 +58,7 @@ export default function ManajemenGuru() {
       const [numB, letterB] = b.nama.match(/(\d+)([A-Z])/).slice(1);
       return numA === numB ? letterA.localeCompare(letterB) : Number(numA) - Number(numB);
     });
-  
+
     setSubkelasList(list);
   };
 
@@ -76,7 +76,7 @@ export default function ManajemenGuru() {
     const emailExists = guruList.some(
       g => g.email === formData.email && g.id !== editId
     );
-    
+
     if (emailExists) {
       toast({
         title: "Email sudah digunakan oleh guru lain.",
@@ -85,7 +85,7 @@ export default function ManajemenGuru() {
         isClosable: true
       });
       return;
-    }    
+    }
 
     try {
       if (editId) {
@@ -124,7 +124,8 @@ export default function ManajemenGuru() {
     setFormData({
       nama: g.nama,
       email: g.email,
-      mapel: g.mapel || []
+      mapel: g.mapel || [],
+      subkelas: g.subkelas || [],
     });
     setEditId(g.id);
     onOpen();
@@ -174,9 +175,7 @@ export default function ManajemenGuru() {
               <Td>{g.email}</Td>
               <Td>{(g.mapel || []).map(id => mapelList.find(m => m.id === id)?.nama).join(", ")}</Td>
               <Td>
-                {(g.subkelas || []).map(id =>
-                  subkelasList.find(s => s.id === id)?.nama
-                ).join(", ")}
+                {(g.subkelas_name).join(", ")}
               </Td>
               <Td>
                 <IconButton icon={<EditIcon />} size="sm" mr={2} onClick={() => handleEdit(g)} />
@@ -207,7 +206,16 @@ export default function ManajemenGuru() {
                 <FormLabel>Mapel</FormLabel>
                 <CheckboxGroup
                   value={formData.mapel}
-                  onChange={(val) => setFormData(f => ({ ...f, mapel: val }))}
+                  onChange={(val) => {
+                    const selectedMapelNames = mapelList
+                      .filter(m => val.includes(m.id))
+                      .map(m => m.nama);
+                    setFormData(f => ({
+                      ...f,
+                      mapel: val,
+                      mapel_name: selectedMapelNames
+                    }));
+                  }}
                 >
                   <Stack direction="row" wrap="wrap">
                     {mapelList.map(m => (
@@ -219,20 +227,29 @@ export default function ManajemenGuru() {
                 </CheckboxGroup>
               </FormControl>
               <FormControl>
-              <FormLabel>Kelas</FormLabel>
-              <CheckboxGroup
-                value={formData.subkelas}
-                onChange={(val) => setFormData(f => ({ ...f, subkelas: val }))}
-              >
-                <Stack direction="row" wrap="wrap">
-                  {subkelasList.map(sk => (
-                    <Checkbox key={sk.id} value={sk.id}>
-                      {sk.nama}
-                    </Checkbox>
-                  ))}
-                </Stack>
-              </CheckboxGroup>
-            </FormControl>
+                <FormLabel>Kelas</FormLabel>
+                <CheckboxGroup
+                  value={formData.subkelas}
+                  onChange={(val) => {
+                    const selectedMapelNames = subkelasList
+                      .filter(m => val.includes(m.id))
+                      .map(m => m.nama);
+                    setFormData(f => ({
+                      ...f,
+                      subkelas: val,
+                      subkelas_name: selectedMapelNames
+                    }));
+                  }}
+                >
+                  <Stack direction="row" wrap="wrap">
+                    {subkelasList.map(sk => (
+                      <Checkbox key={sk.id} value={sk.id}>
+                        {sk.nama}
+                      </Checkbox>
+                    ))}
+                  </Stack>
+                </CheckboxGroup>
+              </FormControl>
             </Stack>
           </ModalBody>
           <ModalFooter>

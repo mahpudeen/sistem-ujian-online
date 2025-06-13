@@ -11,7 +11,7 @@ import { BsArchive } from "react-icons/bs";
 import { Link } from "react-router-dom";
 import { db } from "../../firebase";
 import {
-  collection, getDocs, addDoc, deleteDoc, Timestamp, doc, updateDoc
+  collection, getDocs, addDoc, Timestamp, doc, updateDoc
 } from "firebase/firestore";
 import formatTahun from 'utilities/formatTahun';
 import { useAuth } from "../../context/AuthContext";

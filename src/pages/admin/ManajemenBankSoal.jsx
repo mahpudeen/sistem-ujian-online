@@ -1,6 +1,6 @@
 import {
   Box, Heading, Table, Thead, Tbody, Tr, Th, Td, IconButton, Tooltip, Button,
-  Stack, Select
+  Stack, Select, Flex
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { AiFillDelete, AiOutlineRollback } from "react-icons/ai";
@@ -17,6 +17,8 @@ export default function ManajemenBankSoal() {
   const [filter, setFilter] = useState({ kelas: "", mapel: "" });
   const [mapelList, setMapelList] = useState([]);
   const [kelasList, setKelasList] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     fetchData();
@@ -48,6 +50,13 @@ export default function ManajemenBankSoal() {
       (!filter.mapel || s.mapel === filter.mapel)
     );
   });
+
+  const paginatedList = filteredList.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const pageCount = Math.ceil(filteredList.length / itemsPerPage);
 
   const handleRestore = async (id) => {
     await updateDoc(doc(db, "soal", id), { arsip: false });
@@ -85,7 +94,7 @@ export default function ManajemenBankSoal() {
           </Tr>
         </Thead>
         <Tbody>
-          {filteredList.map((s) => (
+          {paginatedList.map((s) => (
             <Tr key={s.id}>
               <Td>{s.kode}</Td>
               <Td>{s.nama}</Td>
@@ -126,6 +135,22 @@ export default function ManajemenBankSoal() {
           ))}
         </Tbody>
       </Table>
+
+      <Flex mt={4} justify="center" align="center" gap={4}>
+        <Button
+          onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+          isDisabled={currentPage === 1}
+        >
+          Sebelumnya
+        </Button>
+        <Box>Halaman {currentPage} dari {pageCount}</Box>
+        <Button
+          onClick={() => setCurrentPage((p) => Math.min(p + 1, pageCount))}
+          isDisabled={currentPage === pageCount}
+        >
+          Selanjutnya
+        </Button>
+      </Flex>
     </Box>
   );
 }

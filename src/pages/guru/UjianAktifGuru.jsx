@@ -9,8 +9,11 @@ import { collection, getDocs, updateDoc, doc, Timestamp, deleteDoc } from "fireb
 import { db } from "../../firebase";
 import { format, formatISO } from "date-fns";
 import { AiFillEdit, AiOutlineStop, AiOutlineDelete } from 'react-icons/ai';
+import { useAuth } from "../../context/AuthContext";
 
 export default function UjianAktifGuru() {
+  const { user } = useAuth();
+
   const [ujianAktif, setUjianAktif] = useState([]);
   const [ujianRiwayat, setUjianRiwayat] = useState([]);
 
@@ -29,23 +32,27 @@ export default function UjianAktifGuru() {
 
   const fetchUjian = async () => {
     const snap = await getDocs(collection(db, "ujianAktif"));
-    const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    const now = new Date();
+    let list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    const aktif = list.filter(
-      u => u.aktif && now <= u.selesai.toDate()
-    );
-    const riwayat = list.filter(
-      u => !u.aktif || now > u.selesai.toDate()
-    );
+    if (user.role === "guru") {
+      list = list.filter(u => user.mapel_name?.includes(u.mapel));
+    }
+
+    const now = new Date();
+    const aktif = list.filter(u => u.aktif && now <= u.selesai.toDate() && !u.arsip);
+    const riwayat = list.filter(u => !u.aktif || now > u.selesai.toDate() && !u.arsip);
 
     setUjianAktif(aktif);
     setUjianRiwayat(riwayat);
 
-
     const kelasSnap = await getDocs(collection(db, "subkelas"));
-    const kelasArr = kelasSnap.docs.map(d => d.data().nama).sort();
-    setKelasList(kelasArr);
+    let kelasArr = kelasSnap.docs.map(d => d.data().nama);
+
+    if (user.role === "guru") {
+      kelasArr = kelasArr.filter(k => user.subkelas_name?.includes(k));
+    }
+
+    setKelasList(kelasArr.sort());
   };
 
   const nonaktifkanUjian = async (id) => {
@@ -66,7 +73,6 @@ export default function UjianAktifGuru() {
     toast({ title: "Ujian dihapus", status: "info" });
     fetchUjian();
   };
-  
 
   return (
     <Box p={6}>
@@ -114,15 +120,6 @@ export default function UjianAktifGuru() {
                         }}
                       />
                     </Tooltip>
-
-                    <Tooltip label="Nonaktifkan Ujian">
-                      <IconButton
-                        icon={<AiOutlineStop />}
-                        size="sm"
-                        colorScheme="red"
-                        onClick={() => nonaktifkanUjian(ujian.id)}
-                      />
-                    </Tooltip>
                   </>
                 )}
               </Td>
@@ -130,7 +127,7 @@ export default function UjianAktifGuru() {
           ))}
         </Tbody>
       </Table>
-      <Heading my={4} mt={6}>Riwayat Ujian Aktif</Heading>
+      <Heading my={4} size={18} mt={6}>Riwayat Ujian</Heading>
 
       <Table>
         <Thead>
@@ -157,12 +154,19 @@ export default function UjianAktifGuru() {
                 <Tag colorScheme="gray">Selesai</Tag>
               </Td>
               <Td>
-                <Tooltip label="Hapus Riwayat Ujian">
+                <Tooltip label="Edit Ujian">
                   <IconButton
-                    icon={<AiOutlineDelete />}
+                    icon={<AiFillEdit />}
                     size="sm"
-                    colorScheme="red"
-                    onClick={() => hapusUjian(u.id)}
+                    colorScheme="yellow"
+                    mr={2}
+                    onClick={() => {
+                      setEditData(ujian);
+                      setEditMulai(formatISO(ujian.mulai.toDate()).slice(0, 16));
+                      setEditSelesai(formatISO(ujian.selesai.toDate()).slice(0, 16));
+                      setKelasTerpilih(ujian.kelas);
+                      setIsEditOpen(true);
+                    }}
                   />
                 </Tooltip>
               </Td>
@@ -227,7 +231,6 @@ export default function UjianAktifGuru() {
           </ModalFooter>
         </ModalContent>
       </Modal>
-
     </Box>
   );
 }

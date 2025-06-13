@@ -23,7 +23,10 @@ import GuruDashboard from './pages/guru/Dashboard';
 import AktivasiUjian from './pages/guru/AktivasiUjian';
 import UjianAktifGuru from './pages/guru/UjianAktifGuru';
 import PantauUjian from './pages/guru/PantauUjian';
+import PantauUjianDetail from './pages/guru/PantauUjianDetail';
 import RekapNilai from './pages/guru/RekapNilai';
+import RekapNilaiDetail from './pages/guru/RekapNilaiDetail';
+import RekapNilaiArsip from './pages/guru/RekapNilaiArsip';
 import ReviewJawabanSiswa from './pages/guru/ReviewJawabanSiswa';
 
 // Halaman siswa
@@ -56,7 +59,14 @@ function App() {
           <Route path="soal" element={<ManajemenSoal />} />
           <Route path="soal/:id/detail" element={<SoalDetail />} />
           <Route path="bank-soal" element={<ManajemenBankSoal />} />
+          <Route path="aktivasi" element={<AktivasiUjian />} />
+          <Route path="ujian-aktif" element={<UjianAktifGuru />} />
+          <Route path="pantau-ujian" element={<PantauUjian />} />
+          <Route path="pantau-ujian/:ujianId" element={<PantauUjianDetail />} />
           <Route path="nilai" element={<RekapNilai />} />
+          <Route path="nilai/:ujianId" element={<RekapNilaiDetail />} />
+          <Route path="nilai-arsip" element={<RekapNilaiArsip />} />
+          <Route path="review/:ujianId/:userId" element={<ReviewJawabanSiswa />} />
           
         </Route>
 
@@ -74,7 +84,10 @@ function App() {
           <Route path="aktivasi" element={<AktivasiUjian />} />
           <Route path="ujian-aktif" element={<UjianAktifGuru />} />
           <Route path="pantau-ujian" element={<PantauUjian />} />
+          <Route path="pantau-ujian/:ujianId" element={<PantauUjianDetail />} />
           <Route path="nilai" element={<RekapNilai />} />
+          <Route path="nilai/:ujianId" element={<RekapNilaiDetail />} />
+          <Route path="nilai-arsip" element={<RekapNilaiArsip />} />
           <Route path="review/:ujianId/:userId" element={<ReviewJawabanSiswa />} />
 
         </Route>

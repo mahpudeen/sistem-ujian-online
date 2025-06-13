@@ -68,7 +68,14 @@ export default function Login() {
       bg="gray.50"
       p={6}
     >
-      <Box p={6} w="md" mx="auto" bg="white" boxShadow="lg" borderRadius="md">
+      <Box
+        p={6}
+        w={useBreakpointValue({ base: "100%", sm: "90%", md: "md" })}
+        mx="auto"
+        bg="white"
+        boxShadow="lg"
+        borderRadius="md"
+      >
         <Heading mb={6} fontSize={isMobile ? "2xl" : "3xl"} textAlign="center" color="teal.500">
           Login
         </Heading>
@@ -83,6 +90,16 @@ export default function Login() {
           />
           <FormControl>
             <InputGroup>
+              <Input
+                placeholder="Password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                size="lg"
+                py={2}
+                focusBorderColor="teal.500"
+                _hover={{ borderColor: 'teal.300' }}
+              />
               <InputRightElement>
                 <IconButton
                   mt={2}
@@ -92,20 +109,11 @@ export default function Login() {
                   onClick={togglePasswordVisibility}
                 />
               </InputRightElement>
-
-              <Input
-                placeholder="Password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                size="lg"
-                focusBorderColor="teal.500"
-                _hover={{ borderColor: 'teal.300' }}
-              />
             </InputGroup>
           </FormControl>
           <Button
             colorScheme="teal"
+            mt={2}
             size="lg"
             width="100%"
             onClick={handleLogin}

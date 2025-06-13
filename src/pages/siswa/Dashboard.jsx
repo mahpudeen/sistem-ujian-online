@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import {
   Box, Heading, Text, Stack, Tag, Button, Divider
 } from "@chakra-ui/react";

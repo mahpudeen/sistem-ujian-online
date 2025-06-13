@@ -12,8 +12,11 @@ import { autoTable } from 'jspdf-autotable'
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { AiOutlineEye } from "react-icons/ai";
+import { useAuth } from "../../context/AuthContext";
 
 export default function RekapNilaiDetail() {
+  const { user } = useAuth();
+
   const { ujianId } = useParams();
   const [ujian, setUjian] = useState(null);
   const [rekapList, setRekapList] = useState([]);
@@ -45,7 +48,8 @@ export default function RekapNilaiDetail() {
       if (data.role === "siswa") {
         userMap[u.id] = {
           nama: data.nama,
-          kelas: data.kelas
+          kelas: data.kelas,
+          nis: data.nis,
         };
       }
     });
@@ -78,6 +82,7 @@ export default function RekapNilaiDetail() {
         userId: d.userId,
         nama: userMap[d.userId]?.nama || "(tidak ditemukan)",
         kelas: userMap[d.userId]?.kelas || "-",
+        nis: userMap[d.userId]?.nis || "-",
         nilai: Math.round((benar / soalSnap.docs.length) * 100),
         benar,
         submitAt: d.waktuSubmit?.seconds ? new Date(d.waktuSubmit.seconds * 1000) : null,
@@ -92,11 +97,11 @@ export default function RekapNilaiDetail() {
     const doc = new jsPDF();
     doc.text(`Rekap Nilai - ${ujian?.soalNama || ""}`, 14, 16);
     const tableData = filteredList.map(r => [
-      r.nama, r.kelas, r.nilai, r.benar, jumlahSoal,
+      r.nis, r.nama, r.kelas, r.nilai, r.benar, jumlahSoal,
       r.submitAt ? format(r.submitAt, "dd/MM/yyyy HH:mm") : "-"
     ]);
     autoTable(doc, {
-      head: [["Nama", "Kelas", "Nilai", "Benar", "Soal", "Waktu Submit"]],
+      head: [["NIS", "Nama", "Kelas", "Nilai", "Benar", "Soal", "Waktu Submit"]],
       body: tableData,
       startY: 22
     })
@@ -105,6 +110,7 @@ export default function RekapNilaiDetail() {
 
   const exportExcel = () => {
     const data = filteredList.map(r => ({
+      NIS: r.nis,
       Nama: r.nama,
       Kelas: r.kelas,
       Nilai: r.nilai,
@@ -168,6 +174,7 @@ export default function RekapNilaiDetail() {
       <Table>
         <Thead>
           <Tr>
+            <Th>NIS</Th>
             <Th>Nama</Th>
             <Th>Kelas</Th>
             <Th>Nilai</Th>
@@ -181,6 +188,7 @@ export default function RekapNilaiDetail() {
         <Tbody>
           {filteredList.map((r, i) => (
             <Tr key={i}>
+              <Td>{r.nis}</Td>
               <Td>{r.nama}</Td>
               <Td>{r.kelas}</Td>
               <Td><Text fontWeight="bold">{r.nilai}</Text></Td>
@@ -194,7 +202,7 @@ export default function RekapNilaiDetail() {
                 <Tooltip label="Lihat Jawaban">
                   <IconButton
                     as={Link}
-                    to={`/guru/review/${ujianId}/${r.userId}`}
+                    to={`/${user.role}/review/${ujianId}/${r.userId}`}
                     icon={<AiOutlineEye />}
                     colorScheme="blue"
                     size="sm"

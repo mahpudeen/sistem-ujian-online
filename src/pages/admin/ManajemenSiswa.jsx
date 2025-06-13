@@ -16,7 +16,7 @@ export default function ManajemenSiswa() {
   const [subkelasList, setSubkelasList] = useState([]);
   const [siswaList, setSiswaList] = useState([]);
   const [filteredList, setFilteredList] = useState([]);
-  const [formData, setFormData] = useState({ nama: "", email: "", kelas: "" });
+  const [formData, setFormData] = useState({ nama: "", email: "", kelas: "", nis: "" });
   const [editId, setEditId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterKelas, setFilterKelas] = useState("Semua");
@@ -31,7 +31,8 @@ export default function ManajemenSiswa() {
   useEffect(() => {
     fetchSiswa();
     fetchSubkelas();
-  })
+  }, []);
+  
 
   const fetchSiswa = async () => {
     const snapshot = await getDocs(siswaRef);
@@ -62,10 +63,24 @@ export default function ManajemenSiswa() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSubmit = async () => {
-    if (!formData.nama || !formData.email || !formData.kelas)  {
-      toast({ title: "Nama, Email & Kelas wajib diisi", status: "warning" });
+    if (!formData.nama || !formData.email || !formData.kelas || !formData.nis) {
+      toast({ title: "Semua field wajib diisi", status: "warning" });
       return;
-    };;
+    }
+
+    const nisExists = siswaList.some(
+      s => s.nis === formData.nis && s.id !== editId
+    );
+    
+    if (nisExists) {
+      toast({
+        title: "NIS sudah digunakan.",
+        status: "warning",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }     
 
     const emailExists = siswaList.some(
       s => s.email === formData.email && s.id !== editId
@@ -112,6 +127,7 @@ export default function ManajemenSiswa() {
       nama: siswa.nama,
       email: siswa.email,
       kelas: siswa.kelas,
+      nis: siswa.nis || "",
     });
     setEditId(siswa.id);
     onOpen();
@@ -125,7 +141,7 @@ export default function ManajemenSiswa() {
   };
 
   const resetForm = () => {
-    setFormData({ nama: "", email: "", kelas: "" });
+    setFormData({ nama: "", email: "", kelas: "", nis: "" });
     setEditId(null);
     onClose();
   };
@@ -185,6 +201,7 @@ export default function ManajemenSiswa() {
       <Table variant="simple">
         <Thead>
           <Tr>
+            <Th>NIS</Th>
             <Th>Nama</Th>
             <Th>Email</Th>
             <Th>Kelas</Th>
@@ -196,6 +213,7 @@ export default function ManajemenSiswa() {
           .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
           .map((siswa) => (
             <Tr key={siswa.id}>
+              <Td>{siswa.nis}</Td>
               <Td>{siswa.nama}</Td>
               <Td>{siswa.email}</Td>
               <Td>{siswa.kelas}</Td>
@@ -238,6 +256,10 @@ export default function ManajemenSiswa() {
               <FormControl>
                 <FormLabel>Nama</FormLabel>
                 <Input name="nama" value={formData.nama} onChange={handleChange} />
+              </FormControl>
+              <FormControl>
+                <FormLabel>NIS</FormLabel>
+                <Input name="nis" value={formData.nis} onChange={handleChange} />
               </FormControl>
               <FormControl>
                 <FormLabel>Email</FormLabel>

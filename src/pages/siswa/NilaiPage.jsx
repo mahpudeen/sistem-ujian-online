@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import {
   Box, Heading, Text, Table, Thead, Tbody, Tr, Th, Td,
   Spinner, Button, Stack, useBreakpointValue

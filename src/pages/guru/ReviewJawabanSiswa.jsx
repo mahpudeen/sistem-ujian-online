@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import {
   Box, Heading, Text, Radio, Stack, Badge,
   RadioGroup, Spinner, Button, Flex
@@ -97,6 +96,7 @@ export default function ReviewJawabanSiswa() {
       ...data,
       nama: userData.nama || data.userId,
       kelas: userData.kelas || "-",
+      nis: userData.nis || "-",
       nilai: nilaiAkhir,
       benar: totalBenar
     });
@@ -109,7 +109,7 @@ export default function ReviewJawabanSiswa() {
     const element = pdfRef.current;
     const opt = {
       margin: 0.5,
-      filename: `Review_${jawabanData.nama || "Siswa"}.pdf`,
+      filename: `Review_Jawaban_${jawabanData.nis}-${jawabanData.nama}-${jawabanData.kelas}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2 },
       jsPDF: { unit: 'in', format: 'A4', orientation: 'portrait' }
@@ -126,10 +126,12 @@ export default function ReviewJawabanSiswa() {
       </Button>
 
       <Box ref={pdfRef}>
-        <Heading size="md" mb={4}>Review Jawaban Siswa</Heading>
-        <Text mb={2}><strong>Nama:</strong> {jawabanData.nama || jawabanData.userId}</Text>
-        <Text mb={2}><strong>Kelas:</strong> {jawabanData.kelas}</Text>
-        <Text mb={4}><strong>Nilai:</strong> {jawabanData.nilai} (Benar {jawabanData.benar} dari {pertanyaanList.length})</Text>
+        <Heading size="md" textAlign="center" mb={4}>Review Jawaban Siswa</Heading>
+        <Text mb={2}><strong>Siswa: </strong>{jawabanData.nis} - {jawabanData.nama} - {jawabanData.kelas}</Text>
+        <Text mb={4}><strong>Nilai: </strong> 
+          <Text fontWeight="bold" fontStyle="italic" as="span" color={jawabanData.nilai >= 70 ? "blue" : "red" }>
+          {jawabanData.nilai} </Text> <i>(Benar {jawabanData.benar} dari {pertanyaanList.length})</i>
+        </Text>
 
         <Stack spacing={6}>
           {pertanyaanList.map((p, idx) => {

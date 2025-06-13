@@ -30,6 +30,17 @@ export default function RekapNilaiArsip() {
     if (user.role === "guru") {
       list = list.filter(u => user.mapel_name?.includes(u.mapel));
     }
+
+    const jawabanSnap = await getDocs(collection(db, "jawaban"));
+    const countMap = {};
+    jawabanSnap.docs.forEach(doc => {
+      const data = doc.data();
+      if (!countMap[data.ujianId]) countMap[data.ujianId] = 0;
+      countMap[data.ujianId]++;
+    });
+
+    list = list.map(u => ({ ...u, jumlahSiswa: countMap[u.id] || 0 }));
+
     setUjianList(list);
   };
 
@@ -61,6 +72,7 @@ export default function RekapNilaiArsip() {
             <Th>Kelas</Th>
             <Th>Waktu</Th>
             <Th>Status</Th>
+            <Th>Jumlah Siswa</Th>
             <Th>Aksi</Th>
           </Tr>
         </Thead>
@@ -75,6 +87,7 @@ export default function RekapNilaiArsip() {
                 {format(u.selesai.toDate(), "dd/MM/yyyy HH:mm")}
               </Td>
               <Td><Tag colorScheme="gray">Arsip</Tag></Td>
+              <Td>{u.jumlahSiswa}</Td>
               <Td>
                 <IconButton
                   as={Link}

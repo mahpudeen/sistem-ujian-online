@@ -14,6 +14,7 @@ export default function RegisterSiswa() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nama, setNama] = useState("");
+  const [nis, setNis] = useState("");
   const [kelas, setKelas] = useState("");
   const toast = useToast();
   const navigate = useNavigate();
@@ -42,11 +43,41 @@ export default function RegisterSiswa() {
   };
   const handleRegister = async () => {
     try {
+      if (!nama || !email || !password || !kelas || !nis) {
+        toast({
+          title: "Lengkapi semua field",
+          description: "Nama, email, password, kelas, dan NIS wajib diisi.",
+          status: "warning"
+        });
+        return;
+      }
+      
+      if (!/^\d{5,20}$/.test(nis)) {
+        toast({
+          title: "NIS tidak valid",
+          description: "NIS harus berupa angka minimal 5 digit.",
+          status: "warning"
+        });
+        return;
+      }
+  
+      const usersSnap = await getDocs(collection(db, "users"));
+      const nisExists = usersSnap.docs.some(doc => doc.data().nis === nis);
+  
+      if (nisExists) {
+        toast({
+          title: "NIS sudah terdaftar",
+          description: "Gunakan NIS lain atau hubungi admin.",
+          status: "error"
+        });
+        return;
+      }
       const result = await createUserWithEmailAndPassword(auth, email, password);
 
       await setDoc(doc(db, "users", result.user.uid), {
         email,
         nama,
+        nis,
         kelas,
         role: "siswa"
       });
@@ -68,7 +99,14 @@ export default function RegisterSiswa() {
       bg="gray.50"
       p={6}
     >
-      <Box p={6} w="md" mx="auto" bg="white" boxShadow="lg" borderRadius="md">
+      <Box 
+        p={6}
+        w={useBreakpointValue({ base: "100%", sm: "90%", md: "md" })}
+        mx="auto"
+        bg="white"
+        boxShadow="lg"
+        borderRadius="md"
+      >
         <Heading mb={6} fontSize={isMobile ? "2xl" : "3xl"} textAlign="center" color="teal.500">
           Register Siswa
         </Heading>
@@ -77,6 +115,14 @@ export default function RegisterSiswa() {
             placeholder="Nama Lengkap"
             value={nama}
             onChange={(e) => setNama(e.target.value)}
+            size="lg"
+            focusBorderColor="teal.500"
+            _hover={{ borderColor: 'teal.300' }}
+          />
+          <Input
+            placeholder="Nomor Induk Siswa (NIS)"
+            value={nis}
+            onChange={(e) => setNis(e.target.value)}
             size="lg"
             focusBorderColor="teal.500"
             _hover={{ borderColor: 'teal.300' }}
@@ -91,6 +137,16 @@ export default function RegisterSiswa() {
           />
           <FormControl>
             <InputGroup>
+              <Input
+                placeholder="Password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                size="lg"
+                py={2}
+                focusBorderColor="teal.500"
+                _hover={{ borderColor: 'teal.300' }}
+              />
               <InputRightElement>
                 <IconButton
                   mt={2}
@@ -101,15 +157,6 @@ export default function RegisterSiswa() {
                 />
               </InputRightElement>
 
-              <Input
-                placeholder="Password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                size="lg"
-                focusBorderColor="teal.500"
-                _hover={{ borderColor: 'teal.300' }}
-              />
             </InputGroup>
           </FormControl>
           <Select
@@ -128,6 +175,7 @@ export default function RegisterSiswa() {
           <Button
             colorScheme="teal"
             size="md"
+            mt={2}
             width="100%"
             onClick={handleRegister}
             _hover={{ bg: 'teal.600' }}

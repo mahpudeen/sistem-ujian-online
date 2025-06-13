@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import {
   Box, Heading, Text, RadioGroup, Stack, Radio,
   Button, useToast, Progress

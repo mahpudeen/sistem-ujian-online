@@ -7,7 +7,17 @@ import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../../firebase";
 import { Link, useNavigate } from "react-router-dom";
 import { FaGoogle, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+
 export default function Login() {
+  const { user } = useAuth();
+
+  if (user) {
+    if (user.role === "admin") return <Navigate to="/admin" />;
+    if (user.role === "guru") return <Navigate to="/guru" />;
+    if (user.role === "siswa") return <Navigate to="/siswa" />;
+  }
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const toast = useToast();

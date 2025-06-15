@@ -1,13 +1,19 @@
 import {
-  Box, Heading, Text, Table, Thead, Tbody, Tr, Th, Td,
-  Tag, Button
+  Box,
+  Button,
+  Heading,
+  Table,
+  Tbody,
+  Td,
+  Th,
+  Thead,
+  Tr
 } from "@chakra-ui/react";
+import { collection, getDocs, onSnapshot } from "firebase/firestore";
 import { useEffect, useState } from "react";
-import { collection, getDocs, onSnapshot, getDoc, doc } from "firebase/firestore";
-import { db } from "../../firebase";
-import { formatDistanceToNow } from "date-fns";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { db } from "../../firebase";
 
 export default function PantauUjian() {
   const { user } = useAuth();
@@ -46,40 +52,47 @@ export default function PantauUjian() {
   };
 
   return (
-    <Box p={6}>
-      <Heading size="lg" mb={4}>Pantau Ujian Aktif</Heading>
+    <Box bg="white" borderRadius="xl" p={{ base: 4, md: 6 }} boxShadow="sm">
+      <Heading size="lg" mb={4} fontSize={{ base: 'xl', md: '2xl' }}>
+        Pantau Ujian Aktif
+      </Heading>
 
-      <Table>
-        <Thead>
-          <Tr>
-            <Th>Kode</Th>
-            <Th>Nama Soal</Th>
-            <Th>Kelas</Th>
-            <Th>Siswa Sedang Ujian</Th>
-            <Th>Aksi</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {ujianList.map((ujian) => (
-            <Tr key={ujian.id}>
-              <Td>{ujian.soalKode}</Td>
-              <Td>{ujian.soalNama}</Td>
-              <Td>{ujian.kelas.join(", ")}</Td>
-              <Td>{jumlahSiswaAktif[ujian.id] || 0}</Td>
-              <Td>
-                <Button
-                  colorScheme="teal"
-                  size="sm"
-                  as={Link}
-                  to={`${ujian.id}`}
-                >
-                  Lihat Monitoring
-                </Button>
-              </Td>
+      <Box overflowX="auto" borderRadius="md">
+        <Table size="sm">
+          <Thead bg="gray.50">
+            <Tr>
+              <Th>Kode</Th>
+              <Th>Nama Soal</Th>
+              <Th>Kelas</Th>
+              <Th whiteSpace="nowrap">Siswa Sedang Ujian</Th>
+              <Th>Aksi</Th>
             </Tr>
-          ))}
-        </Tbody>
-      </Table>
+          </Thead>
+          <Tbody>
+            {ujianList.map((ujian) => (
+              <Tr key={ujian.id}>
+                <Td>{ujian.soalKode}</Td>
+                <Td>{ujian.soalNama}</Td>
+                <Td>{ujian.kelas.join(', ')}</Td>
+                <Td whiteSpace="nowrap">
+                  {jumlahSiswaAktif[ujian.id] || 0}
+                </Td>
+                <Td>
+                  <Button
+                    colorScheme="teal"
+                    size="sm"
+                    as={Link}
+                    to={`${ujian.id}`}
+                  >
+                    Lihat Monitoring
+                  </Button>
+                </Td>
+              </Tr>
+            ))}
+          </Tbody>
+        </Table>
+      </Box>
     </Box>
+
   );
 }

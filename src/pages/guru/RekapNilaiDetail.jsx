@@ -1,6 +1,6 @@
 import {
   Box, Heading, Text, Table, Thead, Tbody, Tr, Th, Td, Tag, Flex,
-  Button, IconButton, Tooltip, Select
+  Button, IconButton, Tooltip, Select, useToast
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
@@ -13,9 +13,11 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { AiOutlineEye } from "react-icons/ai";
 import { useAuth } from "../../context/AuthContext";
+import { logAudit } from "utilities/logAudit";
 
 export default function RekapNilaiDetail() {
   const { user } = useAuth();
+  const toast = useToast();
 
   const { ujianId } = useParams();
   const [ujian, setUjian] = useState(null);
@@ -137,6 +139,18 @@ export default function RekapNilaiDetail() {
       await updateDoc(doc(db, "jawaban", docSnap.id), { published: true });
     }
 
+    await logAudit({
+      userId: user.uid,
+      nama: user.nama,
+      role: user.role,
+      aksi: "Publikasikan Nilai",
+      entitas: "Rekap Nilai",
+      entitasId: ujianId,
+      detail: `Memublikasikan nilai untuk soal ${ujian.soalKode}`
+    });
+
+    toast({ title: "Rekap nilai dipublikasikan", status: "info" });
+
     fetchData();
   };
 
@@ -147,72 +161,101 @@ export default function RekapNilaiDetail() {
   const kelasUnik = ["Semua", ...new Set(rekapList.map(r => r.kelas))];
 
   return (
-    <Box p={6}>
-      <Heading mb={2}>Rekap Nilai</Heading>
+    <Box bg="white" borderRadius="xl" p={{ base: 4, md: 6 }} boxShadow="sm">
+      <Heading mb={2} fontSize={{ base: 'xl', md: '2xl' }}>
+        Rekap Nilai
+      </Heading>
+
       {ujian && (
-        <Text fontSize="lg" mb={4}>
+        <Text fontSize="md" mb={4}>
           <strong>{ujian.soalNama}</strong> - {ujian.soalKode}
         </Text>
       )}
 
-      <Flex gap={3} mb={4} wrap="wrap">
+      <Flex
+        direction={{ base: 'column', md: 'row' }}
+        wrap="wrap"
+        gap={3}
+        mb={4}
+        align={{ base: 'stretch', md: 'center' }}
+      >
         <Select
           value={kelasFilter}
           onChange={(e) => setKelasFilter(e.target.value)}
-          maxW="200px"
+          maxW={{ base: '100%', md: '200px' }}
+          size="sm"
         >
-          {kelasUnik.map(k => (
+          {kelasUnik.map((k) => (
             <option key={k} value={k}>{k}</option>
           ))}
         </Select>
 
-        <Button onClick={exportPDF} colorScheme="red">Export PDF</Button>
-        <Button onClick={exportExcel} colorScheme="green">Export Excel</Button>
-        <Button onClick={publishNilai} colorScheme="blue">Publikasikan Nilai</Button>
+        <Button colorScheme="red" onClick={exportPDF} size="sm">
+          Export PDF
+        </Button>
+        <Button colorScheme="green" onClick={exportExcel} size="sm">
+          Export Excel
+        </Button>
+        <Button colorScheme="blue" onClick={publishNilai} size="sm">
+          Publikasikan Nilai
+        </Button>
       </Flex>
 
-      <Table>
-        <Thead>
-          <Tr>
-            <Th>NIS</Th>
-            <Th>Nama</Th>
-            <Th>Kelas</Th>
-            <Th>Nilai</Th>
-            <Th>Benar</Th>
-            <Th>Jumlah Soal</Th>
-            <Th>Waktu Submit</Th>
-            <Th>Status</Th>
-            <Th>Aksi</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {filteredList.map((r, i) => (
-            <Tr key={i}>
-              <Td>{r.nis}</Td>
-              <Td>{r.nama}</Td>
-              <Td>{r.kelas}</Td>
-              <Td><Text fontWeight="bold">{r.nilai}</Text></Td>
-              <Td>{r.benar}</Td>
-              <Td>{jumlahSoal}</Td>
-              <Td>{r.submitAt ? format(r.submitAt, "dd/MM/yyyy HH:mm") : "-"}</Td>
-              <Td>
-                {r.published ? <Tag colorScheme="green">Dipublikasikan</Tag> : <Tag colorScheme="gray">Draft</Tag>}
-              </Td>
-              <Td>
-                <Tooltip label="Lihat Jawaban">
-                  <IconButton
-                    as={Link}
-                    to={`/${user.role}/review/${ujianId}/${r.userId}`}
-                    icon={<AiOutlineEye />}
-                    colorScheme="blue"
-                    size="sm"
-                  />
-                </Tooltip>
-              </Td>
+      <Box overflowX="auto" borderRadius="md">
+        <Table size="sm">
+          <Thead bg="gray.50">
+            <Tr>
+              <Th>NIS</Th>
+              <Th>Nama</Th>
+              <Th>Kelas</Th>
+              <Th>Nilai</Th>
+              <Th>Benar</Th>
+              <Th>Jumlah Soal</Th>
+              <Th>Waktu Submit</Th>
+              <Th>Status</Th>
+              <Th>Aksi</Th>
             </Tr>
-          ))}
-        </Tbody>
-      </Table>
+          </Thead>
+          <Tbody>
+            {filteredList.map((r, i) => (
+              <Tr key={i}>
+                <Td>{r.nis}</Td>
+                <Td>{r.nama}</Td>
+                <Td>{r.kelas}</Td>
+                <Td>
+                  <Text fontWeight="bold">{r.nilai}</Text>
+                </Td>
+                <Td>{r.benar}</Td>
+                <Td>{jumlahSoal}</Td>
+                <Td>
+                  {r.submitAt
+                    ? format(r.submitAt, 'dd/MM/yyyy HH:mm')
+                    : '-'}
+                </Td>
+                <Td>
+                  {r.published ? (
+                    <Tag colorScheme="green">Dipublikasikan</Tag>
+                  ) : (
+                    <Tag colorScheme="gray">Draft</Tag>
+                  )}
+                </Td>
+                <Td>
+                  <Tooltip label="Lihat Jawaban">
+                    <IconButton
+                      as={Link}
+                      to={`/${user.role}/review/${ujianId}/${r.userId}`}
+                      icon={<AiOutlineEye />}
+                      colorScheme="blue"
+                      size="sm"
+                      aria-label="Lihat Jawaban"
+                    />
+                  </Tooltip>
+                </Td>
+              </Tr>
+            ))}
+          </Tbody>
+        </Table>
+      </Box>
     </Box>
   );
 }

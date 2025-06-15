@@ -11,8 +11,13 @@ import {
 } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { db, secondaryAuth } from "../../firebase";
+import ConfirmDialog from "components/ConfirmDialog";
+import Pagination from "components/Pagination";
+import { logAudit } from "utilities/logAudit";
+import { useAuth } from "../../context/AuthContext";
 
 export default function ManajemenSiswa() {
+  const { user } = useAuth();
   const [subkelasList, setSubkelasList] = useState([]);
   const [siswaList, setSiswaList] = useState([]);
   const [filteredList, setFilteredList] = useState([]);
@@ -22,9 +27,11 @@ export default function ManajemenSiswa() {
   const [filterKelas, setFilterKelas] = useState("Semua");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-  
+  const [selectedId, setSelectedId] = useState(null);
+
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const confirmDialog = useDisclosure();
 
   const siswaRef = collection(db, "users");
 
@@ -32,7 +39,6 @@ export default function ManajemenSiswa() {
     fetchSiswa();
     fetchSubkelas();
   }, []);
-  
 
   const fetchSiswa = async () => {
     const snapshot = await getDocs(siswaRef);
@@ -47,17 +53,15 @@ export default function ManajemenSiswa() {
   const fetchSubkelas = async () => {
     const snapshot = await getDocs(collection(db, "subkelas"));
     const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  
-    // Sort: 7A, 7B, 8A dst
+
     data.sort((a, b) => {
       const [numA, letterA] = a.nama.match(/(\d+)([A-Z])/).slice(1);
       const [numB, letterB] = b.nama.match(/(\d+)([A-Z])/).slice(1);
       return numA === numB ? letterA.localeCompare(letterB) : Number(numA) - Number(numB);
     });
-  
+
     setSubkelasList(data);
   };
-  
 
   const handleChange = e =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -71,49 +75,50 @@ export default function ManajemenSiswa() {
     const nisExists = siswaList.some(
       s => s.nis === formData.nis && s.id !== editId
     );
-    
+
     if (nisExists) {
-      toast({
-        title: "NIS sudah digunakan.",
-        status: "warning",
-        duration: 3000,
-        isClosable: true,
-      });
+      toast({ title: "NIS sudah digunakan.", status: "warning" });
       return;
-    }     
+    }
 
     const emailExists = siswaList.some(
       s => s.email === formData.email && s.id !== editId
     );
 
     if (emailExists) {
-      toast({
-        title: "Email sudah digunakan.",
-        status: "warning",
-        duration: 3000,
-        isClosable: true,
-      });
+      toast({ title: "Email sudah digunakan.", status: "warning" });
       return;
     }
 
     try {
       if (editId) {
         await updateDoc(doc(db, "users", editId), formData);
+        await logAudit({
+          userId: user.uid,
+          nama: user.nama,
+          role: user.role,
+          aksi: "Edit",
+          entitas: "Manajemen Siswa",
+          entitasId: editId,
+          detail: `Edit siswa ${formData.nama}`
+        });
         toast({ title: "Data diperbarui", status: "success" });
       } else {
         const result = await createUserWithEmailAndPassword(secondaryAuth, formData.email, "password123");
-
         await setDoc(doc(db, "users", result.user.uid), {
           ...formData,
           role: "siswa"
         });
-
-        toast({
-          title: "Siswa berhasil ditambahkan",
-          description: "Password default: password123",
-          status: "success",
+        await logAudit({
+          userId: user.uid,
+          nama: user.nama,
+          role: user.role,
+          aksi: "Tambah",
+          entitas: "Manajemen Siswa",
+          entitasId: result.user.uid,
+          detail: `Tambah siswa ${formData.nama}`
         });
-        
+        toast({ title: "Siswa berhasil ditambahkan", description: "Password default: password123", status: "success" });
       }
       resetForm();
       fetchSiswa();
@@ -123,21 +128,25 @@ export default function ManajemenSiswa() {
   };
 
   const handleEdit = (siswa) => {
-    setFormData({
-      nama: siswa.nama,
-      email: siswa.email,
-      kelas: siswa.kelas,
-      nis: siswa.nis || "",
-    });
+    setFormData({ nama: siswa.nama, email: siswa.email, kelas: siswa.kelas, nis: siswa.nis || "" });
     setEditId(siswa.id);
     onOpen();
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Yakin ingin menghapus siswa ini?")) return;
-    await deleteDoc(doc(db, "users", id));
+  const handleDelete = async () => {
+    await deleteDoc(doc(db, "users", selectedId));
+    await logAudit({
+      userId: user.uid,
+      nama: user.nama,
+      role: user.role,
+      aksi: "Hapus",
+      entitas: "Manajemen Siswa",
+      entitasId: selectedId,
+      detail: `Hapus siswa`
+    });
     toast({ title: "Siswa dihapus", status: "info" });
     fetchSiswa();
+    confirmDialog.onClose();
   };
 
   const resetForm = () => {
@@ -163,89 +172,112 @@ export default function ManajemenSiswa() {
       const matchSearch =
         siswa.nama.toLowerCase().includes(search.toLowerCase()) ||
         siswa.email.toLowerCase().includes(search.toLowerCase());
-
       const matchKelas = kelas === "Semua" || siswa.kelas === kelas;
-
       return matchSearch && matchKelas;
     });
-
     setFilteredList(filtered);
   };
 
-  return (
-    <Box p={6}>
-      <Heading mb={4}>Manajemen Siswa</Heading>
+  const pageCount = Math.ceil(filteredList.length / itemsPerPage);
+  const currentData = filteredList.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
-      <Box mb={4} display="flex" gap={3} flexWrap="wrap">
+  return (
+    <Box bg="white" borderRadius="xl" p={{ base: 4, md: 6 }} boxShadow="sm">
+      <Heading mb={4} fontSize={{ base: 'xl', md: '2xl' }}>
+        Manajemen Siswa
+      </Heading>
+
+      <Stack
+        direction={{ base: 'column', md: 'row' }}
+        spacing={3}
+        mb={4}
+        align={{ base: 'stretch', md: 'center' }}
+      >
         <Input
           placeholder="Cari nama atau email..."
           value={searchQuery}
           onChange={(e) => handleSearch(e.target.value)}
-          maxW="300px"
+          maxW={{ base: '100%', md: '300px' }}
+          size="sm"
         />
         <Select
-          maxW="200px"
+          maxW={{ base: '100%', md: '200px' }}
           value={filterKelas}
           onChange={(e) => handleFilterKelas(e.target.value)}
+          size="sm"
         >
           <option value="Semua">Semua Kelas</option>
           {subkelasList.map((sub) => (
             <option key={sub.id} value={sub.nama}>{sub.nama}</option>
           ))}
         </Select>
-        <Button leftIcon={<AddIcon />} colorScheme="teal" onClick={onOpen}>
+        <Button
+          leftIcon={<AddIcon />}
+          colorScheme="teal"
+          onClick={onOpen}
+          w={{ base: 'full', md: 'auto' }}
+        >
           Tambah Siswa
         </Button>
-      </Box>
+      </Stack>
 
-      <Table variant="simple">
-        <Thead>
-          <Tr>
-            <Th>NIS</Th>
-            <Th>Nama</Th>
-            <Th>Email</Th>
-            <Th>Kelas</Th>
-            <Th>Aksi</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-        {filteredList
-          .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-          .map((siswa) => (
-            <Tr key={siswa.id}>
-              <Td>{siswa.nis}</Td>
-              <Td>{siswa.nama}</Td>
-              <Td>{siswa.email}</Td>
-              <Td>{siswa.kelas}</Td>
-              <Td>
-                <IconButton icon={<EditIcon />} size="sm" mr={2} onClick={() => handleEdit(siswa)} />
-                <IconButton icon={<DeleteIcon />} size="sm" colorScheme="red" onClick={() => handleDelete(siswa.id)} />
-              </Td>
+      <Box overflowX="auto" borderRadius="md">
+        <Table size="sm">
+          <Thead bg="gray.50">
+            <Tr>
+              <Th>NIS</Th>
+              <Th>Nama</Th>
+              <Th>Email</Th>
+              <Th>Kelas</Th>
+              <Th w="10%">Aksi</Th>
             </Tr>
-        ))}
-
-        </Tbody>
-      </Table>
-      <Box mt={4} display="flex" justifyContent="center" alignItems="center" gap={2}>
-        <Button
-          onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
-          disabled={currentPage === 1}
-        >
-          Sebelumnya
-        </Button>
-        <Box>
-          Halaman {currentPage} dari {Math.ceil(filteredList.length / itemsPerPage)}
-        </Box>
-        <Button
-          onClick={() =>
-            setCurrentPage(p => Math.min(p + 1, Math.ceil(filteredList.length / itemsPerPage)))
-          }
-          disabled={currentPage === Math.ceil(filteredList.length / itemsPerPage)}
-        >
-          Selanjutnya
-        </Button>
+          </Thead>
+          <Tbody>
+            {currentData.map((siswa) => (
+              <Tr key={siswa.id}>
+                <Td>{siswa.nis}</Td>
+                <Td>{siswa.nama}</Td>
+                <Td>{siswa.email}</Td>
+                <Td>{siswa.kelas}</Td>
+                <Td>
+                  <Stack direction="row" spacing={1}>
+                    <IconButton
+                      icon={<EditIcon />}
+                      size="sm"
+                      aria-label="Edit"
+                      onClick={() => handleEdit(siswa)}
+                    />
+                    <IconButton
+                      icon={<DeleteIcon />}
+                      size="sm"
+                      colorScheme="red"
+                      aria-label="Delete"
+                      onClick={() => {
+                        setSelectedId(siswa.id)
+                        confirmDialog.onOpen()
+                      }}
+                    />
+                  </Stack>
+                </Td>
+              </Tr>
+            ))}
+          </Tbody>
+        </Table>
       </Box>
 
+      <Box>
+        <Pagination
+          currentPage={currentPage}
+          pageCount={pageCount}
+          onPageChange={setCurrentPage}
+          data={filteredList}
+        />
+      </Box>
+
+      {/* Modal Tambah/Edit */}
       <Modal isOpen={isOpen} onClose={resetForm}>
         <ModalOverlay />
         <ModalContent>
@@ -255,15 +287,15 @@ export default function ManajemenSiswa() {
             <Stack spacing={3}>
               <FormControl>
                 <FormLabel>Nama</FormLabel>
-                <Input name="nama" value={formData.nama} onChange={handleChange} />
+                <Input name="nama" value={formData.nama} onChange={handleChange} size="sm" />
               </FormControl>
               <FormControl>
                 <FormLabel>NIS</FormLabel>
-                <Input name="nis" value={formData.nis} onChange={handleChange} />
+                <Input name="nis" value={formData.nis} onChange={handleChange} size="sm" />
               </FormControl>
               <FormControl>
                 <FormLabel>Email</FormLabel>
-                <Input name="email" value={formData.email} onChange={handleChange} />
+                <Input name="email" value={formData.email} onChange={handleChange} size="sm" />
               </FormControl>
               <FormControl>
                 <FormLabel>Kelas</FormLabel>
@@ -272,6 +304,7 @@ export default function ManajemenSiswa() {
                   placeholder="Pilih subkelas"
                   value={formData.kelas}
                   onChange={handleChange}
+                  size="sm"
                 >
                   {subkelasList.map(sub => (
                     <option key={sub.id} value={sub.nama}>{sub.nama}</option>
@@ -288,6 +321,16 @@ export default function ManajemenSiswa() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={confirmDialog.onClose}
+        onConfirm={handleDelete}
+        title="Hapus Siswa"
+        description="Siswa akan dihapus secara permanen. Lanjutkan?"
+      />
     </Box>
+
   );
 }

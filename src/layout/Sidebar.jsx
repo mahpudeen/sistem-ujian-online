@@ -25,7 +25,7 @@ export default function Sidebar({ isOpen, onClose, isMobile, role, collapsed, se
 
   return (
     <Box
-      bg="gray.100"
+      bg="white"
       w={collapsed ? "20" : "60"}
       h="100vh"
       position="fixed"
@@ -39,7 +39,8 @@ export default function Sidebar({ isOpen, onClose, isMobile, role, collapsed, se
         align="center"
         justify={collapsed ? "center" : "space-between"}
         px={4}
-        h="12"
+        h="16"
+        mb={6}
         borderBottom="1px solid #e2e8f0"
       >
         {!collapsed && <Text fontWeight="bold">Ujian Online</Text>}

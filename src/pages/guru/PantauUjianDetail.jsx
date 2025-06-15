@@ -54,65 +54,83 @@ export default function PantauUjianDetail() {
   }, [ujianId]);
 
   return (
-    <Box p={6}>
-      <Heading size="lg" mb={4}>Monitoring Ujian</Heading>
+    <Box bg="white" borderRadius="xl" p={{ base: 4, md: 6 }} boxShadow="sm">
+      <Heading size="lg" mb={4} fontSize={{ base: 'xl', md: '2xl' }}>
+        Monitoring Ujian
+      </Heading>
 
-      <Table>
-        <Thead>
-          <Tr>
-            <Th>Nama</Th>
-            <Th>Kelas</Th>
-            <Th>Status</Th>
-            <Th>Progress</Th>
-            <Th>Tab Switch</Th>
-            <Th>Aktivitas Terakhir</Th>
-            <Th>Warning</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {siswaList.map((s) => (
-            <Tr key={s.id}>
-              <Td
-                bg={
-                  s.tabSwitchCount >= 3 ? "red.400" :
-                  !s.sedangUjian ? "gray.400" :
-                  s.tabSwitchCount >= 1 ? "orange.400" : undefined
-                }
-              >{s.nama}</Td>
-              <Td
-                bg={
-                  s.tabSwitchCount >= 3 ? "red.400" :
-                  !s.sedangUjian ? "gray.400" :
-                  s.tabSwitchCount >= 1 ? "orange.400" : undefined
-                }
-              >{s.kelas}</Td>
-              <Td>
-                {s.sedangUjian
-                  ? <Tag colorScheme="green">Aktif</Tag>
-                  : <Tag colorScheme="gray">Selesai</Tag>}
-              </Td>
-              <Td>
-                {progresJawaban[s.id] != null
-                  ? `${progresJawaban[s.id]}/${jumlahSoal}`
-                  : "-"}
-              </Td>
-              <Td>
-                <Tag colorScheme={s.tabSwitchCount >= 3 ? "red" : s.tabSwitchCount > 0 ? "orange" : "gray"}>
-                  {s.tabSwitchCount || 0}
-                </Tag>
-              </Td>
-              <Td>
-                {s.waktuTerakhirAktif?.seconds
-                  ? formatDistanceToNow(new Date(s.waktuTerakhirAktif.seconds * 1000), { addSuffix: true })
-                  : "-"}
-              </Td>
-              <Td>
-                <Text fontSize="sm" color="red.500">{s.warning || "-"}</Text>
-              </Td>
+      <Box overflowX="auto" borderRadius="md">
+        <Table size="sm">
+          <Thead bg="gray.50">
+            <Tr>
+              <Th>NIS</Th>
+              <Th>Nama</Th>
+              <Th>Kelas</Th>
+              <Th>Status</Th>
+              <Th>Progress</Th>
+              <Th>Keluar Page</Th>
+              <Th>Aktivitas Terakhir</Th>
+              <Th>Warning</Th>
             </Tr>
-          ))}
-        </Tbody>
-      </Table>
+          </Thead>
+          <Tbody>
+            {siswaList.map((s) => {
+              const bgColor =
+                s.tabSwitchCount >= 3
+                  ? 'red.400'
+                  : !s.sedangUjian
+                    ? 'gray.400'
+                    : s.tabSwitchCount >= 1
+                      ? 'orange.400'
+                      : undefined
+
+              return (
+                <Tr key={s.id}>
+                  <Td bg={bgColor}>{s.nis}</Td>
+                  <Td bg={bgColor}>{s.nama}</Td>
+                  <Td bg={bgColor}>{s.kelas}</Td>
+                  <Td>
+                    <Tag colorScheme={s.sedangUjian ? 'green' : 'gray'}>
+                      {s.sedangUjian ? 'Aktif' : 'Selesai'}
+                    </Tag>
+                  </Td>
+                  <Td>
+                    {progresJawaban[s.id] != null
+                      ? `${progresJawaban[s.id]}/${jumlahSoal}`
+                      : '-'}
+                  </Td>
+                  <Td>
+                    <Tag
+                      colorScheme={
+                        s.tabSwitchCount >= 3
+                          ? 'red'
+                          : s.tabSwitchCount > 0
+                            ? 'orange'
+                            : 'gray'
+                      }
+                    >
+                      {s.tabSwitchCount || 0}
+                    </Tag>
+                  </Td>
+                  <Td>
+                    {s.waktuTerakhirAktif?.seconds
+                      ? formatDistanceToNow(
+                        new Date(s.waktuTerakhirAktif.seconds * 1000),
+                        { addSuffix: true }
+                      )
+                      : '-'}
+                  </Td>
+                  <Td>
+                    <Text fontSize="sm" color="red.500">
+                      {s.warning || '-'}
+                    </Text>
+                  </Td>
+                </Tr>
+              )
+            })}
+          </Tbody>
+        </Table>
+      </Box>
     </Box>
   );
 }

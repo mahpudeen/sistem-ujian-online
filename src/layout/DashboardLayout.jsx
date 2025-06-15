@@ -33,9 +33,10 @@ export default function DashboardLayout({ children }) {
 
       <Box
         ml={!isMobile ? sidebarWidth : "0"}
-        mt="50px"
-        p={isMobile ? 0:6}
+        mt={isMobile ? "70px":16}
+        p={isMobile ? 4:6}
         transition="margin-left 0.2s"
+        bg="#F4F7FE"
       >
         {children}
       </Box>

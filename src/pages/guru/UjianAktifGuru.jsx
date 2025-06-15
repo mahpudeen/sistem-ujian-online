@@ -1,15 +1,37 @@
 import {
-  Box, Heading, Table, Thead, Tbody, Tr, Th, Td, Button, useToast, Tag,
-  Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton,
-  ModalBody, ModalFooter, Input, CheckboxGroup, Checkbox, Stack, Text,
-  IconButton, Tooltip
+  Box,
+  Button,
+  Checkbox,
+  CheckboxGroup,
+  Heading,
+  IconButton,
+  Input,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  Stack,
+  Table,
+  Tag,
+  Tbody,
+  Td,
+  Text,
+  Th,
+  Thead,
+  Tooltip,
+  Tr,
+  useToast,
+  Wrap, WrapItem
 } from "@chakra-ui/react";
-import { useEffect, useState } from "react";
-import { collection, getDocs, updateDoc, doc, Timestamp, deleteDoc } from "firebase/firestore";
-import { db } from "../../firebase";
 import { format, formatISO } from "date-fns";
-import { AiFillEdit, AiOutlineStop, AiOutlineDelete } from 'react-icons/ai';
+import { collection, deleteDoc, doc, getDocs, Timestamp, updateDoc } from "firebase/firestore";
+import { useEffect, useState } from "react";
+import { AiFillEdit } from 'react-icons/ai';
 import { useAuth } from "../../context/AuthContext";
+import { db } from "../../firebase";
 
 export default function UjianAktifGuru() {
   const { user } = useAuth();
@@ -55,62 +77,48 @@ export default function UjianAktifGuru() {
     setKelasList(kelasArr.sort());
   };
 
-  const nonaktifkanUjian = async (id) => {
-    const confirm = window.confirm("Yakin ingin nonaktifkan ujian ini?");
-    if (!confirm) return;
-
-    await updateDoc(doc(db, "ujianAktif", id), {
-      aktif: false
-    });
-
-    toast({ title: "Ujian dinonaktifkan", status: "info" });
-    fetchUjian();
-  };
-
-  const hapusUjian = async (id) => {
-    if (!window.confirm("Yakin ingin menghapus riwayat ujian ini?")) return;
-    await deleteDoc(doc(db, "ujianAktif", id));
-    toast({ title: "Ujian dihapus", status: "info" });
-    fetchUjian();
-  };
-
   return (
-    <Box p={6}>
-      <Heading mb={4}>Daftar Ujian Aktif</Heading>
+    <><Box bg="white" borderRadius="xl" p={{ base: 4, md: 6 }} boxShadow="sm">
+      <Heading mb={4} fontSize={{ base: 'xl', md: '2xl' }}>
+        Daftar Ujian Aktif
+      </Heading>
 
-      <Table>
-        <Thead>
-          <Tr>
-            <Th>Kode</Th>
-            <Th>Nama Soal</Th>
-            <Th>Kelas</Th>
-            <Th>Waktu</Th>
-            <Th>Status</Th>
-            <Th>Aksi</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {ujianAktif.map((ujian) => (
-            <Tr key={ujian.id}>
-              <Td>{ujian.soalKode}</Td>
-              <Td>{ujian.soalNama}</Td>
-              <Td>{ujian.kelas.join(", ")}</Td>
-              <Td>
-                {format(ujian.mulai.toDate(), "dd/MM/yyyy HH:mm")} -<br />
-                {format(ujian.selesai.toDate(), "dd/MM/yyyy HH:mm")}
-              </Td>
-              <Td>
-                {ujian.aktif ? <Tag colorScheme="green">Aktif</Tag> : <Tag colorScheme="gray">Nonaktif</Tag>}
-              </Td>
-              <Td>
-                {ujian.aktif && (
-                  <>
+      <Box overflowX="auto" borderRadius="md">
+        <Table size="sm">
+          <Thead bg="gray.50">
+            <Tr>
+              <Th w="15%">Kode</Th>
+              <Th w="30%">Nama Soal</Th>
+              <Th w="10%">Kelas</Th>
+              <Th w="10%">Waktu</Th>
+              <Th w="10%">Status</Th>
+              <Th w="10%">Aksi</Th>
+            </Tr>
+          </Thead>
+          <Tbody>
+            {ujianAktif.map((ujian) => (
+              <Tr key={ujian.id}>
+                <Td>{ujian.soalKode}</Td>
+                <Td>{ujian.soalNama}</Td>
+                <Td>{ujian.kelas.join(', ')}</Td>
+                <Td whiteSpace="nowrap">
+                  {format(ujian.mulai.toDate(), 'dd/MM/yyyy HH:mm')} -<br />
+                  {format(ujian.selesai.toDate(), 'dd/MM/yyyy HH:mm')}
+                </Td>
+                <Td>
+                  {ujian.aktif ? (
+                    <Tag colorScheme="green">Aktif</Tag>
+                  ) : (
+                    <Tag colorScheme="gray">Nonaktif</Tag>
+                  )}
+                </Td>
+                <Td>
+                  {ujian.aktif && (
                     <Tooltip label="Edit Ujian">
                       <IconButton
                         icon={<AiFillEdit />}
                         size="sm"
                         colorScheme="yellow"
-                        mr={2}
                         onClick={() => {
                           setEditData(ujian);
                           setEditMulai(formatISO(ujian.mulai.toDate()).slice(0, 16));
@@ -118,94 +126,109 @@ export default function UjianAktifGuru() {
                           setKelasTerpilih(ujian.kelas);
                           setIsEditOpen(true);
                         }}
-                      />
+                        aria-label="Edit" />
                     </Tooltip>
-                  </>
-                )}
-              </Td>
-            </Tr>
-          ))}
-        </Tbody>
-      </Table>
-      <Heading my={4} size={18} mt={6}>Riwayat Ujian</Heading>
+                  )}
+                </Td>
+              </Tr>
+            ))}
+          </Tbody>
+        </Table>
+      </Box>
+    </Box>
+      <Box bg="white" borderRadius="xl" mt={4} p={{ base: 4, md: 6 }} boxShadow="sm">
+        <Heading fontSize="lg" mb={4}>
+          Riwayat Ujian
+        </Heading>
 
-      <Table>
-        <Thead>
-          <Tr>
-            <Th>Kode</Th>
-            <Th>Nama Soal</Th>
-            <Th>Kelas</Th>
-            <Th>Waktu</Th>
-            <Th>Status</Th>
-            <Th>Aksi</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {ujianRiwayat.map(u => (
-            <Tr key={u.id}>
-              <Td>{u.soalKode}</Td>
-              <Td>{u.soalNama}</Td>
-              <Td>{u.kelas.join(", ")}</Td>
-              <Td>
-                {format(u.mulai.toDate(), "dd/MM/yyyy HH:mm")} -<br />
-                {format(u.selesai.toDate(), "dd/MM/yyyy HH:mm")}
-              </Td>
-              <Td>
-                <Tag colorScheme="gray">Selesai</Tag>
-              </Td>
-              <Td>
-                <Tooltip label="Edit Ujian">
-                  <IconButton
-                    icon={<AiFillEdit />}
-                    size="sm"
-                    colorScheme="yellow"
-                    mr={2}
-                    onClick={() => {
-                      setEditData(ujian);
-                      setEditMulai(formatISO(ujian.mulai.toDate()).slice(0, 16));
-                      setEditSelesai(formatISO(ujian.selesai.toDate()).slice(0, 16));
-                      setKelasTerpilih(ujian.kelas);
-                      setIsEditOpen(true);
-                    }}
-                  />
-                </Tooltip>
-              </Td>
-            </Tr>
-          ))}
-        </Tbody>
-      </Table>
-      <Modal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)}>
+        <Box overflowX="auto" borderRadius="md">
+          <Table size="sm">
+            <Thead bg="gray.50">
+              <Tr>
+                <Th w="15%">Kode</Th>
+                <Th w="30%">Nama Soal</Th>
+                <Th w="10%">Kelas</Th>
+                <Th w="10%">Waktu</Th>
+                <Th w="10%">Status</Th>
+                <Th w="10%">Aksi</Th>
+              </Tr>
+            </Thead>
+            <Tbody>
+              {ujianRiwayat.map((u) => (
+                <Tr key={u.id}>
+                  <Td>{u.soalKode}</Td>
+                  <Td>{u.soalNama}</Td>
+                  <Td>{u.kelas.join(', ')}</Td>
+                  <Td whiteSpace="nowrap">
+                    {format(u.mulai.toDate(), 'dd/MM/yyyy HH:mm')} -<br />
+                    {format(u.selesai.toDate(), 'dd/MM/yyyy HH:mm')}
+                  </Td>
+                  <Td>
+                    <Tag colorScheme="gray">Selesai</Tag>
+                  </Td>
+                  <Td>
+                    <Tooltip label="Edit Ujian">
+                      <IconButton
+                        icon={<AiFillEdit />}
+                        size="sm"
+                        colorScheme="yellow"
+                        onClick={() => {
+                          setEditData(u);
+                          setEditMulai(formatISO(u.mulai.toDate()).slice(0, 16));
+                          setEditSelesai(formatISO(u.selesai.toDate()).slice(0, 16));
+                          setKelasTerpilih(u.kelas);
+                          setIsEditOpen(true);
+                        }}
+                        aria-label="Edit" />
+                    </Tooltip>
+                  </Td>
+                </Tr>
+              ))}
+            </Tbody>
+          </Table>
+        </Box>
+      </Box>
+
+      <Modal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} size="lg">
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>Edit Jadwal Ujian</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <Stack spacing={3}>
+            <Stack spacing={4}>
               <Box>
-                <Text fontWeight="bold">Kelas</Text>
+                <Text fontWeight="bold" mb={1}>
+                  Kelas
+                </Text>
                 <CheckboxGroup value={kelasTerpilih} onChange={setKelasTerpilih}>
-                  <Stack direction="row" wrap="wrap">
+                  <Wrap spacing={4}>
                     {kelasList.map((k) => (
-                      <Checkbox key={k} value={k}>{k}</Checkbox>
+                      <WrapItem key={k}>
+                        <Checkbox value={k}>{k}</Checkbox>
+                      </WrapItem>
                     ))}
-                  </Stack>
+                  </Wrap>
                 </CheckboxGroup>
               </Box>
               <Box>
-                <Text fontWeight="bold">Tanggal & Jam Mulai</Text>
+                <Text fontWeight="bold" mb={1}>
+                  Tanggal & Jam Mulai
+                </Text>
                 <Input
                   type="datetime-local"
                   value={editMulai}
                   onChange={(e) => setEditMulai(e.target.value)}
-                />
+                  size="sm" />
               </Box>
               <Box>
-                <Text fontWeight="bold">Tanggal & Jam Selesai</Text>
+                <Text fontWeight="bold" mb={1}>
+                  Tanggal & Jam Selesai
+                </Text>
                 <Input
                   type="datetime-local"
                   value={editSelesai}
                   onChange={(e) => setEditSelesai(e.target.value)}
-                />
+                  size="sm" />
               </Box>
             </Stack>
           </ModalBody>
@@ -214,23 +237,25 @@ export default function UjianAktifGuru() {
               colorScheme="teal"
               onClick={async () => {
                 const durasi = (new Date(editSelesai) - new Date(editMulai)) / 60000;
-                await updateDoc(doc(db, "ujianAktif", editData.id), {
+                await updateDoc(doc(db, 'ujianAktif', editData.id), {
                   mulai: Timestamp.fromDate(new Date(editMulai)),
                   selesai: Timestamp.fromDate(new Date(editSelesai)),
                   kelas: kelasTerpilih,
                   durasiMenit: durasi
                 });
-                toast({ title: "Jadwal diperbarui", status: "success" });
+                toast({ title: 'Jadwal diperbarui', status: 'success' });
                 setIsEditOpen(false);
                 fetchUjian();
               }}
             >
               Simpan
             </Button>
-            <Button onClick={() => setIsEditOpen(false)} ml={3}>Batal</Button>
+            <Button onClick={() => setIsEditOpen(false)} ml={3}>
+              Batal
+            </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
-    </Box>
+    </>
   );
 }

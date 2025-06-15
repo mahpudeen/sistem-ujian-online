@@ -74,6 +74,8 @@ export default function ReviewUjianSiswa() {
       const soalDoc = await getDoc(doc(db, "soal", data.soalId));
       const soalInfo = soalDoc.exists() ? soalDoc.data() : {};
 
+      console.log(totalBenar)
+
       setJawabanData({
         kode: soalInfo.kode || "(tanpa kode)",
         namaSoal: soalInfo.nama || "(tanpa nama)",
@@ -104,7 +106,7 @@ export default function ReviewUjianSiswa() {
   if (loading) return <Spinner m={8} />;
 
   return (
-    <Box p={4}>
+    <Box bg="white" borderRadius="xl" p={{ base: 4, md: 6 }} boxShadow="sm">
       <Button colorScheme="teal" mb={4} onClick={handleExportPDF}>
         Export PDF
       </Button>

@@ -1,27 +1,58 @@
+import { AddIcon, DeleteIcon, EditIcon } from "@chakra-ui/icons";
 import {
-  Box, Heading, Input, Table, Thead, Tbody, Tr, Th, Td,
-  Button, IconButton, Modal, ModalOverlay, ModalContent, ModalHeader,
-  ModalCloseButton, ModalBody, ModalFooter, useDisclosure, FormControl,
-  FormLabel, useToast, Stack, Checkbox, CheckboxGroup
+  Box,
+  Button,
+  Checkbox,
+  CheckboxGroup,
+  FormControl,
+  FormLabel,
+  Heading,
+  IconButton,
+  Input,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  Stack,
+  Table,
+  Tbody,
+  Td,
+  Th,
+  Thead,
+  Tr,
+  useDisclosure,
+  useToast,
+  Wrap,
+  WrapItem
 } from "@chakra-ui/react";
-import { AddIcon, EditIcon, DeleteIcon } from "@chakra-ui/icons";
-import { useEffect, useState } from "react";
-import {
-  collection, getDocs, setDoc, updateDoc, deleteDoc, doc
-} from "firebase/firestore";
 import { createUserWithEmailAndPassword } from "firebase/auth";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  setDoc,
+  updateDoc,
+} from "firebase/firestore";
+import { useEffect, useState } from "react";
 import { db, secondaryAuth } from "../../firebase";
 
 export default function ManajemenGuru() {
   const [guruList, setGuruList] = useState([]);
   const [formData, setFormData] = useState({
-    nama: "", email: "", mapel: [], mapel_name: [], subkelas: []
+    nama: "",
+    email: "",
+    mapel: [],
+    mapel_name: [],
+    subkelas: [],
   });
   const [editId, setEditId] = useState(null);
   const [mapelList, setMapelList] = useState([]);
   const [subkelasList, setSubkelasList] = useState([]);
   const [search, setSearch] = useState("");
-
 
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -37,26 +68,29 @@ export default function ManajemenGuru() {
 
   const fetchGuru = async () => {
     const snap = await getDocs(guruRef);
-    const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-      .filter(g => g.role === "guru");
+    const data = snap.docs
+      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .filter((g) => g.role === "guru");
     setGuruList(data);
   };
 
   const fetchMapel = async () => {
     const snap = await getDocs(mapelRef);
-    const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const list = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     setMapelList(list);
   };
 
   const fetchSubkelas = async () => {
     const snap = await getDocs(collection(db, "subkelas"));
-    const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const list = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
     // Sort: 7A, 7B, 8A dst
     list.sort((a, b) => {
       const [numA, letterA] = a.nama.match(/(\d+)([A-Z])/).slice(1);
       const [numB, letterB] = b.nama.match(/(\d+)([A-Z])/).slice(1);
-      return numA === numB ? letterA.localeCompare(letterB) : Number(numA) - Number(numB);
+      return numA === numB
+        ? letterA.localeCompare(letterB)
+        : Number(numA) - Number(numB);
     });
 
     setSubkelasList(list);
@@ -64,17 +98,17 @@ export default function ManajemenGuru() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(f => ({ ...f, [name]: value }));
+    setFormData((f) => ({ ...f, [name]: value }));
   };
 
   const handleSubmit = async () => {
     if (!formData.nama || !formData.email) {
       toast({ title: "Nama & Email wajib diisi", status: "warning" });
       return;
-    };
+    }
 
     const emailExists = guruList.some(
-      g => g.email === formData.email && g.id !== editId
+      (g) => g.email === formData.email && g.id !== editId
     );
 
     if (emailExists) {
@@ -82,7 +116,7 @@ export default function ManajemenGuru() {
         title: "Email sudah digunakan oleh guru lain.",
         status: "warning",
         duration: 3000,
-        isClosable: true
+        isClosable: true,
       });
       return;
     }
@@ -92,24 +126,32 @@ export default function ManajemenGuru() {
         await updateDoc(doc(db, "users", editId), formData);
         toast({ title: "Data guru diperbarui", status: "success" });
       } else {
-        const result = await createUserWithEmailAndPassword(secondaryAuth, formData.email, "qwerty123");
+        const result = await createUserWithEmailAndPassword(
+          secondaryAuth,
+          formData.email,
+          "qwerty123"
+        );
 
         await setDoc(doc(db, "users", result.user.uid), {
           ...formData,
-          role: "guru"
+          role: "guru",
         });
 
         toast({
           title: "Guru ditambahkan",
           description: "Password default: qwerty123",
-          status: "success"
+          status: "success",
         });
       }
 
       resetForm();
       fetchGuru();
     } catch (err) {
-      toast({ title: "Terjadi kesalahan", description: err.message, status: "error" });
+      toast({
+        title: "Terjadi kesalahan",
+        description: err.message,
+        status: "error",
+      });
     }
   };
 
@@ -137,93 +179,134 @@ export default function ManajemenGuru() {
     onClose();
   };
 
-  const filteredGuru = guruList.filter(g =>
-    g.nama.toLowerCase().includes(search.toLowerCase()) ||
-    g.email.toLowerCase().includes(search.toLowerCase())
+  const filteredGuru = guruList.filter(
+    (g) =>
+      g.nama.toLowerCase().includes(search.toLowerCase()) ||
+      g.email.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
-    <Box p={6}>
-      <Heading mb={4}>Manajemen Guru</Heading>
+    <Box bg="white" borderRadius="xl" p={{ base: 4, md: 6 }} boxShadow="sm">
+      <Heading mb={4} fontSize={{ base: 'xl', md: '2xl' }}>
+        Manajemen Guru
+      </Heading>
 
-      <Box mb={4} display="flex" gap={3} flexWrap="wrap">
+      <Stack
+        direction={{ base: 'column', md: 'row' }}
+        spacing={3}
+        mb={4}
+        align={{ base: 'stretch', md: 'center' }}
+      >
         <Input
           placeholder="Cari nama atau email..."
-          maxW="300px"
           value={search}
+          maxW={{ base: '100%', md: '300px' }}
           onChange={(e) => setSearch(e.target.value)}
+          size={{ base: 'sm', md: 'md' }}
         />
-        <Button leftIcon={<AddIcon />} colorScheme="teal" onClick={onOpen}>
+        <Button
+          leftIcon={<AddIcon />}
+          colorScheme="teal"
+          onClick={onOpen}
+          w={{ base: 'full', md: 'auto' }}
+        >
           Tambah Guru
         </Button>
+      </Stack>
+
+      <Box overflowX="auto" borderRadius="md">
+        <Table size="sm" variant="simple">
+          <Thead bg="gray.50">
+            <Tr>
+              <Th>Nama</Th>
+              <Th>Email</Th>
+              <Th>Mapel</Th>
+              <Th>Kelas</Th>
+              <Th w="10%">Aksi</Th>
+            </Tr>
+          </Thead>
+          <Tbody>
+            {filteredGuru.map((g) => (
+              <Tr key={g.id}>
+                <Td>{g.nama}</Td>
+                <Td>{g.email}</Td>
+                <Td>
+                  {(g.mapel || [])
+                    .map((id) => mapelList.find((m) => m.id === id)?.nama)
+                    .join(', ')}
+                </Td>
+                <Td>{g.subkelas_name.join(', ')}</Td>
+                <Td>
+                  <Stack direction="row" spacing={2}>
+                    <IconButton
+                      icon={<EditIcon />}
+                      size="sm"
+                      onClick={() => handleEdit(g)}
+                      aria-label="Edit"
+                    />
+                    <IconButton
+                      icon={<DeleteIcon />}
+                      size="sm"
+                      colorScheme="red"
+                      onClick={() => handleDelete(g.id)}
+                      aria-label="Delete"
+                    />
+                  </Stack>
+                </Td>
+              </Tr>
+            ))}
+          </Tbody>
+        </Table>
       </Box>
 
-      <Table variant="simple">
-        <Thead>
-          <Tr>
-            <Th>Nama</Th>
-            <Th>Email</Th>
-            <Th>Mapel</Th>
-            <Th>Kelas</Th>
-            <Th>Aksi</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {filteredGuru.map((g) => (
-            <Tr key={g.id}>
-              <Td>{g.nama}</Td>
-              <Td>{g.email}</Td>
-              <Td>{(g.mapel || []).map(id => mapelList.find(m => m.id === id)?.nama).join(", ")}</Td>
-              <Td>
-                {(g.subkelas_name).join(", ")}
-              </Td>
-              <Td>
-                <IconButton icon={<EditIcon />} size="sm" mr={2} onClick={() => handleEdit(g)} />
-                <IconButton icon={<DeleteIcon />} size="sm" colorScheme="red" onClick={() => handleDelete(g.id)} />
-              </Td>
-            </Tr>
-          ))}
-        </Tbody>
-      </Table>
-
-      {/* Modal tambah/edit */}
-      <Modal isOpen={isOpen} onClose={resetForm}>
+      {/* Modal */}
+      <Modal isOpen={isOpen} onClose={resetForm} size="lg">
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>{editId ? "Edit Guru" : "Tambah Guru"}</ModalHeader>
+          <ModalHeader>{editId ? 'Edit Guru' : 'Tambah Guru'}</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <Stack spacing={3}>
               <FormControl>
                 <FormLabel>Nama</FormLabel>
-                <Input name="nama" value={formData.nama} onChange={handleChange} />
+                <Input
+                  name="nama"
+                  value={formData.nama}
+                  onChange={handleChange}
+                  size="sm"
+                />
               </FormControl>
               <FormControl>
                 <FormLabel>Email</FormLabel>
-                <Input name="email" value={formData.email} onChange={handleChange} />
+                <Input
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  size="sm"
+                />
               </FormControl>
               <FormControl>
                 <FormLabel>Mapel</FormLabel>
                 <CheckboxGroup
                   value={formData.mapel}
                   onChange={(val) => {
-                    const selectedMapelNames = mapelList
-                      .filter(m => val.includes(m.id))
-                      .map(m => m.nama);
-                    setFormData(f => ({
+                    const selected = mapelList
+                      .filter((m) => val.includes(m.id))
+                      .map((m) => m.nama)
+                    setFormData((f) => ({
                       ...f,
                       mapel: val,
-                      mapel_name: selectedMapelNames
-                    }));
+                      mapel_name: selected
+                    }))
                   }}
                 >
-                  <Stack direction="row" wrap="wrap">
-                    {mapelList.map(m => (
-                      <Checkbox key={m.id} value={m.id}>
-                        {m.nama}
-                      </Checkbox>
+                  <Wrap>
+                    {mapelList.map((m) => (
+                      <WrapItem key={m.id}>
+                        <Checkbox value={m.id}>{m.nama}</Checkbox>
+                      </WrapItem>
                     ))}
-                  </Stack>
+                  </Wrap>
                 </CheckboxGroup>
               </FormControl>
               <FormControl>
@@ -231,29 +314,29 @@ export default function ManajemenGuru() {
                 <CheckboxGroup
                   value={formData.subkelas}
                   onChange={(val) => {
-                    const selectedMapelNames = subkelasList
-                      .filter(m => val.includes(m.id))
-                      .map(m => m.nama);
-                    setFormData(f => ({
+                    const selected = subkelasList
+                      .filter((s) => val.includes(s.id))
+                      .map((s) => s.nama)
+                    setFormData((f) => ({
                       ...f,
                       subkelas: val,
-                      subkelas_name: selectedMapelNames
-                    }));
+                      subkelas_name: selected
+                    }))
                   }}
                 >
-                  <Stack direction="row" wrap="wrap">
-                    {subkelasList.map(sk => (
-                      <Checkbox key={sk.id} value={sk.id}>
-                        {sk.nama}
-                      </Checkbox>
+                  <Wrap>
+                    {subkelasList.map((sk) => (
+                      <WrapItem key={sk.id}>
+                        <Checkbox value={sk.id}>{sk.nama}</Checkbox>
+                      </WrapItem>
                     ))}
-                  </Stack>
+                  </Wrap>
                 </CheckboxGroup>
               </FormControl>
             </Stack>
           </ModalBody>
           <ModalFooter>
-            <Button colorScheme="teal" mr={3} onClick={handleSubmit}>
+            <Button colorScheme="teal" mr={2} onClick={handleSubmit}>
               Simpan
             </Button>
             <Button onClick={resetForm}>Batal</Button>
@@ -261,5 +344,6 @@ export default function ManajemenGuru() {
         </ModalContent>
       </Modal>
     </Box>
+
   );
 }

@@ -1,18 +1,35 @@
 import {
-  Box, Heading, Table, Thead, Tbody, Tr, Th, Td,
-  IconButton, Tag, useToast, Flex, Button
+  Box, Heading,
+  IconButton,
+  Stack,
+  Table,
+  Tag,
+  Tbody,
+  Td,
+  Th,
+  Thead,
+  Tooltip,
+  Tr,
+  useDisclosure,
+  useToast
 } from "@chakra-ui/react";
-import { useEffect, useState } from "react";
-import { collection, getDocs, deleteDoc, updateDoc, doc } from "firebase/firestore";
-import { db } from "../../firebase";
+import ConfirmDialog from "components/ConfirmDialog";
+import Pagination from "components/Pagination";
 import { format } from "date-fns";
-import { AiOutlineEye, AiOutlineDelete, AiOutlineRollback } from "react-icons/ai";
+import { collection, deleteDoc, doc, getDocs, updateDoc } from "firebase/firestore";
+import { useEffect, useState } from "react";
+import { AiOutlineDelete, AiOutlineEye, AiOutlineRollback } from "react-icons/ai";
 import { Link } from "react-router-dom";
+import { logAudit } from "utilities/logAudit";
 import { useAuth } from "../../context/AuthContext";
+import { db } from "../../firebase";
 
 export default function RekapNilaiArsip() {
   const { user } = useAuth();
   const [ujianList, setUjianList] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
+  const [confirmMode, setConfirmMode] = useState(""); // 'delete' atau 'restore'
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const toast = useToast();
@@ -26,7 +43,7 @@ export default function RekapNilaiArsip() {
     let list = snap.docs
       .map(doc => ({ id: doc.id, ...doc.data() }))
       .filter(u => u.arsip === true);
-    
+
     if (user.role === "guru") {
       list = list.filter(u => user.mapel_name?.includes(u.mapel));
     }
@@ -44,93 +61,142 @@ export default function RekapNilaiArsip() {
     setUjianList(list);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Hapus permanen rekap nilai ini?")) return;
-    await deleteDoc(doc(db, "ujianAktif", id));
+  const confirmDelete = async () => {
+    await deleteDoc(doc(db, "ujianAktif", selectedId));
+    await logAudit({
+      userId: user.uid,
+      nama: user.nama,
+      role: user.role,
+      aksi: "Hapus Permanen",
+      entitas: "Arsip Rekap Nilai",
+      entitasId: selectedId,
+      detail: `Menghapus permanen rekap nilai ${selectedId}`
+    });
     toast({ title: "Rekap nilai dihapus permanen", status: "info" });
     fetchUjian();
+    onClose();
   };
 
-  const handleRestore = async (id) => {
-    await updateDoc(doc(db, "ujianAktif", id), { arsip: false });
+  const confirmRestore = async () => {
+    await updateDoc(doc(db, "ujianAktif", selectedId), { arsip: false });
+    await logAudit({
+      userId: user.uid,
+      nama: user.nama,
+      role: user.role,
+      aksi: "Pulihkan",
+      entitas: "Arsip Rekap Nilai",
+      entitasId: selectedId,
+      detail: `Memulihkan rekap nilai ${selectedId}`
+    });
     toast({ title: "Rekap nilai dipulihkan", status: "success" });
     fetchUjian();
+    onClose();
   };
+
 
   const pageCount = Math.ceil(ujianList.length / itemsPerPage);
   const currentData = ujianList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
-    <Box p={6}>
-      <Heading mb={4}>Arsip Rekap Nilai</Heading>
+    <Box bg="white" borderRadius="xl" p={{ base: 4, md: 6 }} boxShadow="sm">
+      <Heading mb={4} fontSize={{ base: 'xl', md: '2xl' }}>
+        Arsip Rekap Nilai
+      </Heading>
 
-      <Table>
-        <Thead>
-          <Tr>
-            <Th>Kode</Th>
-            <Th>Nama Soal</Th>
-            <Th>Kelas</Th>
-            <Th>Waktu</Th>
-            <Th>Status</Th>
-            <Th>Jumlah Siswa</Th>
-            <Th>Aksi</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {currentData.map((u) => (
-            <Tr key={u.id}>
-              <Td>{u.soalKode}</Td>
-              <Td>{u.soalNama}</Td>
-              <Td>{u.kelas?.join(", ")}</Td>
-              <Td>
-                {format(u.mulai.toDate(), "dd/MM/yyyy HH:mm")} - <br />
-                {format(u.selesai.toDate(), "dd/MM/yyyy HH:mm")}
-              </Td>
-              <Td><Tag colorScheme="gray">Arsip</Tag></Td>
-              <Td>{u.jumlahSiswa}</Td>
-              <Td>
-                <IconButton
-                  as={Link}
-                  to={`/${user.role}/nilai/${u.id}`}
-                  icon={<AiOutlineEye />}
-                  size="sm"
-                  colorScheme="blue"
-                  mr={2}
-                />
-                <IconButton
-                  icon={<AiOutlineRollback />}
-                  onClick={() => handleRestore(u.id)}
-                  size="sm"
-                  colorScheme="green"
-                  mr={2}
-                />
-                <IconButton
-                  icon={<AiOutlineDelete />}
-                  onClick={() => handleDelete(u.id)}
-                  size="sm"
-                  colorScheme="red"
-                />
-              </Td>
+      <Box overflowX="auto" borderRadius="md">
+        <Table size="sm">
+          <Thead bg="gray.50">
+            <Tr>
+              <Th>Kode</Th>
+              <Th>Nama Soal</Th>
+              <Th>Kelas</Th>
+              <Th>Waktu</Th>
+              <Th>Status</Th>
+              <Th>Jumlah Siswa</Th>
+              <Th w="10%">Aksi</Th>
             </Tr>
-          ))}
-        </Tbody>
-      </Table>
+          </Thead>
+          <Tbody>
+            {currentData.map((u) => (
+              <Tr key={u.id}>
+                <Td>{u.soalKode}</Td>
+                <Td>{u.soalNama}</Td>
+                <Td>{u.kelas?.join(', ')}</Td>
+                <Td whiteSpace="nowrap">
+                  {format(u.mulai.toDate(), 'dd/MM/yyyy HH:mm')} -<br />
+                  {format(u.selesai.toDate(), 'dd/MM/yyyy HH:mm')}
+                </Td>
+                <Td>
+                  <Tag colorScheme="gray">Arsip</Tag>
+                </Td>
+                <Td>{u.jumlahSiswa}</Td>
+                <Td>
+                  <Stack direction="row" spacing={1}>
+                    <Tooltip label="Lihat Rekap Nilai">
+                      <IconButton
+                        as={Link}
+                        to={`/${user.role}/nilai/${u.id}`}
+                        icon={<AiOutlineEye />}
+                        size="sm"
+                        colorScheme="blue"
+                        aria-label="Lihat Rekap"
+                      />
+                    </Tooltip>
+                    <Tooltip label="Pulihkan Rekap">
+                      <IconButton
+                        icon={<AiOutlineRollback />}
+                        onClick={() => {
+                          setSelectedId(u.id)
+                          setConfirmMode('restore')
+                          onOpen()
+                        }}
+                        size="sm"
+                        colorScheme="green"
+                        aria-label="Pulihkan"
+                      />
+                    </Tooltip>
+                    <Tooltip label="Hapus Permanen">
+                      <IconButton
+                        icon={<AiOutlineDelete />}
+                        onClick={() => {
+                          setSelectedId(u.id)
+                          setConfirmMode('delete')
+                          onOpen()
+                        }}
+                        size="sm"
+                        colorScheme="red"
+                        aria-label="Hapus"
+                      />
+                    </Tooltip>
+                  </Stack>
+                </Td>
+              </Tr>
+            ))}
+          </Tbody>
+        </Table>
+      </Box>
 
-      <Flex mt={4} justify="center" align="center" gap={4}>
-        <Button
-          onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
-          disabled={currentPage === 1}
-        >
-          Sebelumnya
-        </Button>
-        <Box>Halaman {currentPage} dari {pageCount}</Box>
-        <Button
-          onClick={() => setCurrentPage(p => Math.min(p + 1, pageCount))}
-          disabled={currentPage === pageCount}
-        >
-          Selanjutnya
-        </Button>
-      </Flex>
+      <Box>
+        <Pagination
+          currentPage={currentPage}
+          pageCount={pageCount}
+          onPageChange={setCurrentPage}
+          data={ujianList}
+        />
+      </Box>
+
+      <ConfirmDialog
+        isOpen={isOpen}
+        onClose={onClose}
+        onConfirm={confirmMode === 'delete' ? confirmDelete : confirmRestore}
+        title={confirmMode === 'delete' ? 'Hapus Permanen' : 'Pulihkan Rekap'}
+        description={
+          confirmMode === 'delete'
+            ? 'Rekap nilai akan dihapus permanen. Lanjutkan?'
+            : 'Rekap nilai akan dipulihkan. Lanjutkan?'
+        }
+      />
     </Box>
+
   );
 }

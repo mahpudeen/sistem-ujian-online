@@ -1,13 +1,18 @@
 import {
   Box, Button, Heading, Table, Thead, Tbody, Tr, Th, Td, useDisclosure,
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody,
-  ModalFooter, Stack, Select, Checkbox, CheckboxGroup, Text, Input, useToast
+  ModalFooter, Stack, Select, Checkbox, CheckboxGroup, Text, Input, useToast,
+  IconButton, Tooltip, HStack
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { collection, getDocs, addDoc, Timestamp } from "firebase/firestore";
 import { db } from "../../firebase";
 import formatTahun from 'utilities/formatTahun';
 import { useAuth } from "../../context/AuthContext";
+import Pagination from "components/Pagination";
+import { BsRocketTakeoff } from "react-icons/bs";
+import { logAudit } from "utilities/logAudit";
+import { FaRegCalendarPlus } from "react-icons/fa"
 
 export default function AktivasiUjian() {
   const { user } = useAuth();
@@ -20,6 +25,9 @@ export default function AktivasiUjian() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -29,7 +37,6 @@ export default function AktivasiUjian() {
     const subkelasSnap = await getDocs(collection(db, "subkelas"));
 
     let allSoal = soalSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
     allSoal = allSoal.filter(s => !s.arsip);
     if (user.role === "guru") {
       allSoal = allSoal.filter(s => user.mapel?.includes(s.mapel));
@@ -37,7 +44,6 @@ export default function AktivasiUjian() {
     setSoalList(allSoal);
 
     let allSubkelas = subkelasSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
     if (user.role === "guru") {
       allSubkelas = allSubkelas.filter(s => user.subkelas?.includes(s.id));
     }
@@ -53,9 +59,9 @@ export default function AktivasiUjian() {
 
     const mulaiTS = Timestamp.fromDate(new Date(mulai));
     const selesaiTS = Timestamp.fromDate(new Date(selesai));
-    const durasi = (new Date(selesai) - new Date(mulai)) / 60000; // dalam menit
+    const durasi = (new Date(selesai) - new Date(mulai)) / 60000;
 
-    await addDoc(collection(db, "ujianAktif"), {
+    const docRef = await addDoc(collection(db, "ujianAktif"), {
       soalId: selectedSoal.id,
       soalKode: selectedSoal.kode,
       soalNama: selectedSoal.nama,
@@ -68,6 +74,16 @@ export default function AktivasiUjian() {
       createdBy: user.uid
     });
 
+    await logAudit({
+      userId: user.uid,
+      nama: user.nama,
+      role: user.role,
+      aksi: "Aktivasi",
+      entitas: "Aktivasi Ujian",
+      entitasId: docRef.id,
+      detail: `Aktivasi ujian soal ${selectedSoal.nama}`
+    });
+
     toast({ title: "Ujian berhasil diaktifkan", status: "success" });
     setSelectedSoal(null);
     setKelasTerpilih([]);
@@ -76,11 +92,18 @@ export default function AktivasiUjian() {
     onClose();
   };
 
+  const pageCount = Math.ceil(soalList.length / itemsPerPage);
+  const currentData = soalList.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   return (
-    <Box p={6}>
-      <Heading mb={4}>Aktivasi Ujian</Heading>
-      <Table>
-        <Thead>
+    <Box bg="white" borderRadius="xl" p={{ base: 4, md: 6 }} boxShadow="sm">
+      <Heading mb={4}>Jadwalkan Ujian</Heading>
+
+      <Table size="sm">
+        <Thead bg="gray.50">
           <Tr>
             <Th>Kode</Th>
             <Th>Nama Soal</Th>
@@ -88,11 +111,11 @@ export default function AktivasiUjian() {
             <Th>Mapel</Th>
             <Th>Tahun</Th>
             <Th>Type</Th>
-            <Th>Aksi</Th>
+            <Th w="10%">Aksi</Th>
           </Tr>
         </Thead>
         <Tbody>
-          {soalList.map((s) => (
+          {currentData.map((s) => (
             <Tr key={s.id}>
               <Td>{s.kode}</Td>
               <Td>{s.nama}</Td>
@@ -101,17 +124,30 @@ export default function AktivasiUjian() {
               <Td>{formatTahun(s.tahunPelajaran)}</Td>
               <Td>{s.type}</Td>
               <Td>
-                <Button size="sm" colorScheme="teal" onClick={() => {
-                  setSelectedSoal(s);
-                  onOpen();
-                }}>
-                  Aktifkan
-                </Button>
+                <Tooltip label="Jadwalkan Ujian">
+                  <IconButton
+                    icon={<FaRegCalendarPlus />}
+                    size="sm"
+                    colorScheme="teal"
+                    onClick={() => {
+                      setSelectedSoal(s);
+                      onOpen();
+                    }}
+                    aria-label="aktifkan"
+                  />
+                </Tooltip>
               </Td>
             </Tr>
           ))}
         </Tbody>
       </Table>
+
+      <Pagination
+        currentPage={currentPage}
+        pageCount={pageCount}
+        onPageChange={setCurrentPage}
+        data={soalList}
+      />
 
       {/* Modal Aktivasi */}
       <Modal isOpen={isOpen} onClose={onClose} size="lg">

@@ -13,7 +13,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'), // Optional
-      'utilities': path.resolve(__dirname, 'src/utilities'), // ✅ Ini penting
+      'utilities': path.resolve(__dirname, 'src/utilities'),
+      components: path.resolve(__dirname, 'src/components')
     },
   },
   server: {

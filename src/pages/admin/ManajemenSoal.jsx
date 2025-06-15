@@ -1,20 +1,44 @@
 import {
-  Box, Button, Heading, Input, Table, Thead, Tbody, Tr, Th, Td,
-  Select, Stack, useToast, Modal, ModalOverlay, ModalContent,
-  ModalHeader, ModalCloseButton, ModalBody, ModalFooter, useDisclosure,
-  Tooltip, IconButton
+  Box, Button, Heading,
+  IconButton,
+  Input,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  Select, Stack,
+  Table,
+  Tbody,
+  Td,
+  Th,
+  Thead,
+  Tooltip,
+  Tr,
+  useDisclosure,
+  useToast
 } from "@chakra-ui/react";
-import { useEffect, useState } from "react";
-import { AiFillEdit, AiFillDelete } from "react-icons/ai";
-import { MdLibraryBooks } from "react-icons/md";
-import { BsArchive } from "react-icons/bs";
-import { Link } from "react-router-dom";
-import { db } from "../../firebase";
 import {
-  collection, getDocs, addDoc, Timestamp, doc, updateDoc
+  addDoc,
+  collection,
+  doc,
+  getDocs,
+  Timestamp,
+  updateDoc
 } from "firebase/firestore";
+import { useEffect, useState } from "react";
+import { AiFillEdit } from "react-icons/ai";
+import { BsArchive } from "react-icons/bs";
+import { MdLibraryBooks } from "react-icons/md";
+import { Link } from "react-router-dom";
 import formatTahun from 'utilities/formatTahun';
 import { useAuth } from "../../context/AuthContext";
+import { db } from "../../firebase";
+import Pagination from 'components/Pagination'
+import ConfirmDialog from 'components/ConfirmDialog';
+import { logAudit } from 'utilities/logAudit';
 
 export default function ManajemenSoal() {
   const { user } = useAuth();
@@ -28,6 +52,8 @@ export default function ManajemenSoal() {
   const [filter, setFilter] = useState({ tahunPelajaran: "", kelas: "", mapel: "" });
   const [editId, setEditId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedId, setSelectedId] = useState(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const itemsPerPage = 10;
 
   const toast = useToast();
@@ -66,7 +92,7 @@ export default function ManajemenSoal() {
   const generateKode = () => {
     const thn = formData.tahunPelajaran;
     const mapel = mapelList.find(m => m.id === formData.mapel)?.kodeMapel || "???";
-    const random = Math.floor(Math.random() * 900) + 100; 
+    const random = Math.floor(Math.random() * 900) + 100;
     return `${mapel}-${formData.kelas}-${thn}-${formData.type}-${random}`;
   };
 
@@ -82,8 +108,19 @@ export default function ManajemenSoal() {
           kode,
         });
         toast({ title: "Soal diperbarui", status: "success" });
+
+        await logAudit({
+          userId: user.uid,
+          nama: user.nama,
+          role: user.role,
+          aksi: "Edit",
+          entitas: "List Soal",
+          entitasId: editId,
+          detail: `Edit soal ${formData.nama}`
+        });
+
       } else {
-        await addDoc(soalRef, {
+        const docRef = await addDoc(soalRef, {
           ...formData,
           mapelNama: selectedMapel?.nama || "",
           kode,
@@ -91,6 +128,16 @@ export default function ManajemenSoal() {
           aktif: true,
         });
         toast({ title: "Soal berhasil ditambahkan", status: "success" });
+
+        await logAudit({
+          userId: user.uid,
+          nama: user.nama,
+          role: user.role,
+          aksi: "Tambah",
+          entitas: "List Soal",
+          entitasId: docRef.id,
+          detail: `Tambah soal ${formData.nama}`
+        });
       }
 
       setFormData({ nama: "", tahunPelajaran: "", kelas: "", mapel: "", mapelNama: "", type: "" });
@@ -102,10 +149,22 @@ export default function ManajemenSoal() {
     }
   };
 
-  const handleArchive = async (id) => {
-    if (!window.confirm("Arsipkan soal ini?")) return;
-    await updateDoc(doc(db, "soal", id), { arsip: true });
+  const handleArchive = async () => {
+    await updateDoc(doc(db, "soal", selectedId), { arsip: true });
     toast({ title: "Soal diarsipkan", status: "info" });
+
+    await logAudit({
+      userId: user.uid,
+      nama: user.nama,
+      role: user.role,
+      aksi: "Arsip",
+      entitas: "List Soal",
+      entitasId: selectedId,
+      detail: `Arsipkan soal ID ${selectedId}`
+    });
+
+    setSelectedId(null);
+    setConfirmOpen(false);
     fetchAll();
   };
 
@@ -140,10 +199,11 @@ export default function ManajemenSoal() {
   );
 
   return (
-    <Box p={6}>
-      <Heading mb={4}>Manajemen Soal</Heading>
-
-      <Stack direction="row" spacing={4} mb={4}>
+    <Box bg="white" borderRadius="xl" p={{ base: 4, md: 6 }} boxShadow="sm">
+      <Heading mb={4} fontSize={{ base: 'xl', md: '2xl' }}>
+        List Soal
+      </Heading>
+      <Stack direction={{ base: 'column', md: 'row' }} spacing={4} mb={4}>
         <Select placeholder="Semua Tahun" onChange={e => setFilter({ ...filter, tahunPelajaran: e.target.value })}>
           {tahunOptions.map(opt => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -158,92 +218,60 @@ export default function ManajemenSoal() {
         <Button px={14} colorScheme="teal" onClick={onOpen}>Tambah Soal</Button>
       </Stack>
 
-      <Table>
-        <Thead>
-          <Tr>
-            <Th>Kode</Th>
-            <Th>Nama</Th>
-            <Th>Kelas</Th>
-            <Th>Mapel</Th>
-            <Th>Tahun</Th>
-            <Th>Type</Th>
-            <Th>Aksi</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {currentData.map((s) => (
-            <Tr key={s.id}>
-              <Td>{s.kode}</Td>
-              <Td>{s.nama}</Td>
-              <Td>{s.kelas}</Td>
-              <Td>{s.mapelNama}</Td>
-              <Td>{formatTahun(s.tahunPelajaran)}</Td>
-              <Td>{s.type}</Td>
-              <Td>
-                <Tooltip label="Detail Soal">
-                  <IconButton
-                    icon={<MdLibraryBooks />}
-                    mr={2}
-                    size="sm"
-                    colorScheme="blue"
-                    as={Link}
-                    to={`/${user.role}/soal/${s.id}/detail`}
-                  />
-                </Tooltip>
-                <Tooltip label="Edit Soal">
-                  <IconButton
-                    icon={<AiFillEdit />}
-                    size="sm"
-                    colorScheme="green"
-                    mr={2}
-                    onClick={() => {
-                      setFormData({
-                        nama: s.nama,
-                        tahunPelajaran: s.tahunPelajaran,
-                        kelas: s.kelas,
-                        mapel: s.mapel,
-                        type: s.type,
-                      });
-                      setEditId(s.id);
-                      onOpen();
-                    }}
-                  />
-                </Tooltip>
-                <Tooltip label="Archive Soal">
-                  <IconButton
-                    icon={<BsArchive />}
-                    size="sm"
-                    colorScheme="orange"
-                    onClick={() => handleArchive(s.id)}
-                  />
-                </Tooltip>
-              </Td>
+      <Box overflowX="auto">
+        <Table size="sm">
+          <Thead bg="gray.50">
+            <Tr>
+              <Th>Kode</Th>
+              <Th>Nama</Th>
+              <Th>Kelas</Th>
+              <Th>Mapel</Th>
+              <Th>Tahun</Th>
+              <Th>Type</Th>
+              <Th w="10%">Aksi</Th>
             </Tr>
-          ))}
-        </Tbody>
-      </Table>
-
-      <Box mt={4} display="flex" justifyContent="center" alignItems="center" gap={4}>
-        <Button
-          onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-          isDisabled={currentPage === 1}
-        >
-          Sebelumnya
-        </Button>
-        <Box>Halaman {currentPage} dari {pageCount}</Box>
-        <Button
-          onClick={() => setCurrentPage((p) => Math.min(p + 1, pageCount))}
-          isDisabled={currentPage === pageCount}
-        >
-          Selanjutnya
-        </Button>
+          </Thead>
+          <Tbody>
+            {currentData.map((s) => (
+              <Tr key={s.id}>
+                <Td>{s.kode}</Td>
+                <Td>{s.nama}</Td>
+                <Td>{s.kelas}</Td>
+                <Td>{s.mapelNama}</Td>
+                <Td>{formatTahun(s.tahunPelajaran)}</Td>
+                <Td>{s.type}</Td>
+                <Td>
+                  <Stack direction="row" spacing={1}>
+                    <Tooltip label="Detail Soal">
+                      <IconButton icon={<MdLibraryBooks />} size="sm" colorScheme="blue" as={Link} to={`/${user.role}/soal/${s.id}/detail`} />
+                    </Tooltip>
+                    <Tooltip label="Edit Soal">
+                      <IconButton icon={<AiFillEdit />} size="sm" colorScheme="green" onClick={() => {
+                        setFormData({ nama: s.nama, tahunPelajaran: s.tahunPelajaran, kelas: s.kelas, mapel: s.mapel, type: s.type });
+                        setEditId(s.id);
+                        onOpen();
+                      }} />
+                    </Tooltip>
+                    <Tooltip label="Archive Soal">
+                      <IconButton icon={<BsArchive />} size="sm" colorScheme="orange" onClick={() => {
+                        setSelectedId(s.id);
+                        setConfirmOpen(true);
+                      }} />
+                    </Tooltip>
+                  </Stack>
+                </Td>
+              </Tr>
+            ))}
+          </Tbody>
+        </Table>
       </Box>
 
-      {/* Modal Tambah Soal */}
+      <Pagination currentPage={currentPage} pageCount={pageCount} onPageChange={setCurrentPage} data={filteredList} />
+
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Tambah Soal</ModalHeader>
+          <ModalHeader>{editId ? "Edit Soal" : "Tambah Soal"}</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <Stack spacing={3}>
@@ -270,6 +298,14 @@ export default function ManajemenSoal() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      <ConfirmDialog
+        isOpen={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleArchive}
+        title="Arsipkan Soal"
+        description="Soal akan dipindahkan ke Bank Soal. Lanjutkan?"
+      />
     </Box>
   );
 }

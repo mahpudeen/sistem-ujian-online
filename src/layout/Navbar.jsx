@@ -23,8 +23,20 @@ export default function Navbar({ onToggleSidebar, sidebarWidth, role }) {
 
   const location = useLocation();
   const menu = menuByRole[role] || [];
-  const currentItem = menu.find(item => item.path === location.pathname);
-  const pageTitle = currentItem?.label || "Dashboard";
+
+  const getCurrentItemLabel = (menu, pathname) => {
+    for (const item of menu) {
+      if (item.path === pathname) return item
+      if (item.children) {
+        const found = item.children.find(child => child.path === pathname)
+        if (found) return found
+      }
+    }
+    return null
+  }
+
+  const currentItem = getCurrentItemLabel(menu, location.pathname)
+  const pageTitle = currentItem?.label || 'Dashboard'
   
   const handleLogout = async () => {
     await logout();
@@ -40,7 +52,7 @@ export default function Navbar({ onToggleSidebar, sidebarWidth, role }) {
       bg="white"
       px={4}
       py={3}
-      shadow="md"
+      shadow="sm"
       align="center"
       position="fixed"
       top="0"
@@ -73,15 +85,50 @@ export default function Navbar({ onToggleSidebar, sidebarWidth, role }) {
           aria-label="Profile Menu"
         />
         <MenuList>
-          <Box px={3} py={1}>
-            <Text fontSize="sm" color="gray.500">{user?.nama} {user.kelas ? ' - '+ user.kelas : ' - '+user.role}</Text>
-            <Text fontSize="sm" color="gray.500">{user?.email}</Text>
-          </Box>
-          <hr />
-          <MenuItem onClick={handleProfile}>Profile Management</MenuItem>
-          <MenuItem onClick={handleLogout} color="red.500">
-            Logout
-          </MenuItem>
+          <Flex w="100%" mb="0px">
+            <Text
+              ps="20px"
+              pt="16px"
+              pb="10px"
+              w="100%"
+              borderBottom="1px solid"
+              borderColor="#E6ECFA"
+              fontSize="sm"
+              fontWeight="700"
+              color="secondaryGray.900"
+            >
+              <Text
+                as="span"
+                fontSize="sm"
+                color="gray.500"
+              >
+                {user?.nama} {user.kelas ? ' - '+ user.kelas : ' - '+ user.role}
+              </Text>
+              <br />
+              <Text as="span" fontSize="sm" color="gray.500">{user?.email}</Text>
+            </Text>
+          </Flex>
+          <Flex flexDirection="column" p="10px">
+            <MenuItem
+              _hover={{ bg: 'none' }}
+              _focus={{ bg: 'none' }}
+              borderRadius="8px"
+              px="14px"
+              onClick={handleProfile}
+            >
+              <Text fontSize="sm">Profile Settings</Text>
+            </MenuItem>
+            <MenuItem
+              _hover={{ bg: 'none' }}
+              _focus={{ bg: 'none' }}
+              color="red.400"
+              borderRadius="8px"
+              px="14px"
+              onClick={handleLogout} 
+            >
+              <Text fontSize="sm">Log out</Text>
+            </MenuItem>
+          </Flex>
         </MenuList>
       </Menu>
     </Flex>

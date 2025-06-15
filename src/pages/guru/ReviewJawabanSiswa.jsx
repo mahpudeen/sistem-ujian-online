@@ -60,6 +60,7 @@ export default function ReviewJawabanSiswa() {
     });
 
     let totalBenar = 0;
+    console.log(data)
 
     // Susun ulang soal berdasarkan soalOrder yang disimpan
     const ordered = (data.soalOrder || Object.keys(data.jawaban)).map(id => {
@@ -78,6 +79,7 @@ export default function ReviewJawabanSiswa() {
         totalBenar++;
       }
 
+      console.log(totalBenar)
       return {
         id,
         teks: soal.teks,
@@ -120,7 +122,7 @@ export default function ReviewJawabanSiswa() {
   if (loading || !jawabanData) return <Spinner m={8} />;
 
   return (
-    <Box p={6}>
+    <Box bg="white" borderRadius="xl" p={{ base: 4, md: 6 }} boxShadow="sm">
       <Button colorScheme="teal" mb={4} onClick={handleExportPDF}>
         Export PDF
       </Button>

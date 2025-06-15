@@ -17,6 +17,7 @@ import ManajemenMapel from './pages/admin/ManajemenMapel';
 import ManajemenSoal from './pages/admin/ManajemenSoal';
 import ManajemenBankSoal from './pages/admin/ManajemenBankSoal';
 import SoalDetail from './pages/admin/SoalDetail';
+import AuditLog from './pages/admin/AuditLog';
 
 // Halaman guru
 import GuruDashboard from './pages/guru/Dashboard';
@@ -67,6 +68,7 @@ function App() {
           <Route path="nilai/:ujianId" element={<RekapNilaiDetail />} />
           <Route path="nilai-arsip" element={<RekapNilaiArsip />} />
           <Route path="review/:ujianId/:userId" element={<ReviewJawabanSiswa />} />
+          <Route path="audit" element={<AuditLog />} />
           
         </Route>
 

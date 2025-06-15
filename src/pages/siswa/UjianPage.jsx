@@ -78,6 +78,7 @@ export default function UjianPage() {
     await setDoc(doc(db, "logUjianAktif", id, "monitoring", user.uid), {
       nama: user.nama,
       kelas: user.kelas,
+      nis: user.nis,
       sedangUjian: true,
       tabSwitchCount: 0,
       waktuMulai: serverTimestamp(),
@@ -119,7 +120,7 @@ export default function UjianPage() {
 
         await updateDoc(doc(db, "logUjianAktif", id, "monitoring", user.uid), {
           tabSwitchCount: next,
-          warning: `Tab switch ke-${next}`,
+          warning: `Keluar page ke-${next}`,
           waktuTerakhirAktif: serverTimestamp()
         });
 

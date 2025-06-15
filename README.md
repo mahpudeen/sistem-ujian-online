@@ -63,7 +63,7 @@ Menggunakan **Firebase Authentication**:
 ## 📦 Instalasi Lokal
 
 ```bash
-git clone https://github.com/namakamu/sistem-ujian-online.git
+git clone https://github.com/mahpudeen/sistem-ujian-online.git
 cd sistem-ujian-online
 npm install
 npm run dev

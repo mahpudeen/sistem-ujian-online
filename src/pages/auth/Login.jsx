@@ -5,7 +5,7 @@ import {
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../../firebase";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FaGoogle, FaEye, FaEyeSlash } from 'react-icons/fa';
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -136,11 +136,11 @@ export default function Login() {
         </VStack>
         <Text mt={4} fontSize="sm" textAlign="center">
           Belum punya akun?{' '}
-          <a href="/register/siswa" style={{ color: '#3182ce' }}>Daftar Siswa</a> |{' '}
-          <a href="/register/guru" style={{ color: '#3182ce' }}>Daftar Guru</a> 
+          <Text as={Link} to="/register/siswa" style={{ color: '#3182ce' }}>Daftar Siswa</Text> |{' '}
+          <Text as={Link} to="/register/guru" style={{ color: '#3182ce' }}>Daftar Guru</Text> 
         </Text>
         <Text mt={2} fontSize="sm" textAlign="center">
-          <a href="/forgot-password" style={{ color: '#3182ce' }}>Lupa Password?</a>
+          <Text as={Link} to="/forgot-password" style={{ color: '#3182ce' }}>Lupa Password?</Text>
         </Text>
       </Box>
     </Flex>

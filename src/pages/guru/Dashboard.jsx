@@ -59,10 +59,11 @@ export default function DashboardGuru() {
   if (loading) return <Spinner mt={10} size="xl" color="teal.500" />;
 
   return (
-    <Box p={4} mx="auto">
-      <Heading size="lg" mb={2} color="teal.600">Halo, {user.nama}</Heading>
-
-      <Box mt={4} p={4} bg="gray.50" borderRadius="md" boxShadow="sm">
+    <Box bg="white" borderRadius="xl" p={{ base: 4, md: 6 }} boxShadow="sm">
+      <Box bg="white" borderRadius="xl" boxShadow="sm">
+        <Heading size="lg" color="teal.600">Halo, {user.nama}</Heading>
+      </Box>
+      <Box mt={6}>
         <Text fontWeight="bold" mb={2}>📘 Mapel yang Diampu:</Text>
         <Stack direction="row" flexWrap="wrap" gap={2}>
           {mapelList.map(m => (
@@ -71,7 +72,7 @@ export default function DashboardGuru() {
         </Stack>
       </Box>
 
-      <Box mt={4} p={4} bg="gray.50" borderRadius="md" boxShadow="sm">
+      <Box mt={6}>
         <Text fontWeight="bold" mb={2}>🏫 Kelas yang Diampu:</Text>
         <Stack direction="row" flexWrap="wrap" gap={2}>
           {subkelasList.map(s => (

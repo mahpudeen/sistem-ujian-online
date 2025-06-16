@@ -1,15 +1,42 @@
 import {
-  Box, Heading, Text, Button, Table, Thead, Tbody, Tr, Th, Td,
-  useToast, Stack, Input, Modal, ModalOverlay, ModalContent,
-  ModalHeader, ModalCloseButton, ModalBody, ModalFooter, useDisclosure,
-  Textarea, Tooltip, IconButton, Flex
+  Box,
+  Button,
+  Flex,
+  Heading,
+  IconButton,
+  Input, Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  Stack,
+  Table,
+  Tbody,
+  Td,
+  Text,
+  Textarea,
+  Th,
+  Thead,
+  Tooltip,
+  Tr,
+  useDisclosure,
+  useToast
 } from "@chakra-ui/react";
-import { useEffect, useState } from "react";
-import { AiFillEdit, AiFillDelete } from "react-icons/ai";
-import { useParams } from "react-router-dom";
+import ConfirmDialog from 'components/ConfirmDialog';
 import {
-  doc, getDoc, collection, getDocs, addDoc, Timestamp, setDoc, deleteDoc
+  addDoc,
+  collection,
+  deleteDoc,
+  doc, getDoc,
+  getDocs,
+  setDoc,
+  Timestamp
 } from "firebase/firestore";
+import { useEffect, useState } from "react";
+import { AiFillDelete, AiFillEdit } from "react-icons/ai";
+import { useParams } from "react-router-dom";
 import { db } from "../../firebase";
 
 export default function SoalDetail() {
@@ -22,6 +49,9 @@ export default function SoalDetail() {
   const [opsiList, setOpsiList] = useState(["", "", "", ""]);
   const [jawabanBenar, setJawabanBenar] = useState(null);
   const [editId, setEditId] = useState(null);
+  const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
+  const [selectedId, setSelectedId] = useState(null);
+
 
   useEffect(() => {
     fetchSoal();
@@ -51,14 +81,14 @@ export default function SoalDetail() {
       toast({ title: "Pertanyaan, jawaban & minimal 4 opsi wajib diisi", status: "warning" });
       return;
     }
-  
+
     const data = {
       teks: newPertanyaan,
       opsi: opsiList,
       jawabanBenar,
       createdAt: Timestamp.now()
     };
-  
+
     try {
       if (editId) {
         await setDoc(doc(db, "soal", id, "pertanyaan", editId), data);
@@ -67,7 +97,7 @@ export default function SoalDetail() {
         await addDoc(collection(db, "soal", id, "pertanyaan"), data);
         toast({ title: "Pertanyaan ditambahkan", status: "success" });
       }
-  
+
       // Reset
       setNewPertanyaan("");
       setOpsiList(["", "", "", ""]);
@@ -75,92 +105,101 @@ export default function SoalDetail() {
       setEditId(null);
       onClose();
       fetchPertanyaan();
-  
+
     } catch (err) {
       toast({ title: "Gagal simpan", description: err.message, status: "error" });
     }
   };
 
   const handleDelete = async (ids) => {
-    if (window.confirm("Yakin hapus pertanyaan?")) {
-      await deleteDoc(doc(db, "soal", id, "pertanyaan", ids));
-      fetchPertanyaan();
-      toast({ title: "Pertanyaan dihapus", status: "info" });
-    }
+    await deleteDoc(doc(db, "soal", id, "pertanyaan", ids));
+    fetchPertanyaan();
+    toast({ title: "Pertanyaan dihapus", status: "info" });
   };
 
-  
+
   return (
-    <Box p={6}>
-      <Heading mb={2}>Detail Soal</Heading>
+    <Box bg="white" borderRadius="xl" p={{ base: 4, md: 6 }} boxShadow="sm">
+      <Heading mb={2} fontSize={{ base: 'xl', md: '2xl' }}>Detail Soal</Heading>
+
       {soal && (
-        <Text fontSize="lg" mb={4}>
+        <Text fontSize="md" mb={4}>
           <strong>{soal.nama}</strong> - {soal.kode}
         </Text>
       )}
 
-      <Button colorScheme="teal" onClick={onOpen} mb={4}>Tambah Pertanyaan</Button>
+      <Button colorScheme="teal" onClick={onOpen} mb={4}>
+        Tambah Pertanyaan
+      </Button>
 
-      <Table>
-        <Thead>
-          <Tr>
-            <Th>No</Th>
-            <Th width="85%">Pertanyaan</Th>
-            <Th textAlign="center">Aksi</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {pertanyaanList.map((p, i) => (
-            <Tr key={p.id}>
-              <Td>{i + 1}</Td>
-              <Td>
-                <Text mb={2} fontWeight="bold">{p.teks}</Text>
-                <Box>
-                  {p.opsi?.map((o, j) => (
-                    <Text key={j} color={j === p.jawabanBenar ? "green.500" : "gray.700"}>
-                      {String.fromCharCode(65 + j)}. {o}
-                    </Text>
-                  ))}
-                </Box>
-              </Td>
-              <Td textAlign="center">
-                <Flex gap={2} flexWrap="wrap">
-                  <Tooltip label="Edit Soal">
-                    <IconButton
-                      icon={<AiFillEdit />}
-                      size="sm"
-                      colorScheme="green"
-                      onClick={() => {
-                        setEditId(p.id);
-                        setNewPertanyaan(p.teks);
-                        setOpsiList(p.opsi || ["", "", "", ""]);
-                        setJawabanBenar(p.jawabanBenar);
-                        onOpen();
-                      }}
-                    />
-                  </Tooltip>
-                  <Tooltip label="Delete Soal">
-                    <IconButton
-                      icon={<AiFillDelete />}
-                      size="sm"
-                      colorScheme="red"
-                      onClick={() => handleDelete(p.id)}
-                    />
-                  </Tooltip>
-                </Flex>
-              </Td>
-
+      <Box overflowX="auto" borderRadius="md">
+        <Table size="sm">
+          <Thead bg="gray.50">
+            <Tr>
+              <Th>No</Th>
+              <Th w="85%">Pertanyaan</Th>
+              <Th textAlign="center">Aksi</Th>
             </Tr>
-          ))}
-        </Tbody>
-      </Table>
+          </Thead>
+          <Tbody>
+            {pertanyaanList.map((p, i) => (
+              <Tr key={p.id}>
+                <Td>{i + 1}</Td>
+                <Td>
+                  <Text mb={2} fontWeight="semibold">{p.teks}</Text>
+                  <Box>
+                    {p.opsi?.map((o, j) => (
+                      <Text
+                        key={j}
+                        color={j === p.jawabanBenar ? 'green.500' : 'gray.700'}
+                      >
+                        {String.fromCharCode(65 + j)}. {o}
+                      </Text>
+                    ))}
+                  </Box>
+                </Td>
+                <Td textAlign="center">
+                  <Flex gap={2} flexWrap="wrap" justify="center">
+                    <Tooltip label="Edit Soal">
+                      <IconButton
+                        icon={<AiFillEdit />}
+                        size="sm"
+                        colorScheme="green"
+                        onClick={() => {
+                          setEditId(p.id)
+                          setNewPertanyaan(p.teks)
+                          setOpsiList(p.opsi || ["", "", "", ""])
+                          setJawabanBenar(p.jawabanBenar)
+                          onOpen()
+                        }}
+                        aria-label="Edit"
+                      />
+                    </Tooltip>
+                    <Tooltip label="Delete Soal">
+                      <IconButton
+                        icon={<AiFillDelete />}
+                        size="sm"
+                        colorScheme="red"
+                        onClick={() => {
+                          setSelectedId(p.id);
+                          onDeleteOpen();
+                        }}
+                        aria-label="Delete"
+                      />
+                    </Tooltip>
+                  </Flex>
+                </Td>
+              </Tr>
+            ))}
+          </Tbody>
+        </Table>
+      </Box>
 
-
-      {/* Modal Tambah Pertanyaan */}
-      <Modal isOpen={isOpen} onClose={onClose}>
+      {/* Modal Tambah/Edit Pertanyaan */}
+      <Modal isOpen={isOpen} onClose={onClose} size="lg">
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Tambah Pertanyaan</ModalHeader>
+          <ModalHeader>{editId ? 'Edit Pertanyaan' : 'Tambah Pertanyaan'}</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <Stack spacing={4}>
@@ -168,18 +207,20 @@ export default function SoalDetail() {
                 placeholder="Teks pertanyaan"
                 value={newPertanyaan}
                 onChange={(e) => setNewPertanyaan(e.target.value)}
+                size="sm"
               />
               <Box>
-                <Text fontWeight="bold">Opsi Jawaban:</Text>
+                <Text fontWeight="bold" mb={1}>Opsi Jawaban:</Text>
                 {opsiList.map((opsi, i) => (
-                  <Stack key={i} direction="row" align="center" mt={2}>
+                  <Flex key={i} gap={2} align="center" mt={2}>
                     <Input
                       placeholder={`Opsi ${i + 1}`}
                       value={opsi}
+                      size="sm"
                       onChange={(e) => {
-                        const newOpsi = [...opsiList];
-                        newOpsi[i] = e.target.value;
-                        setOpsiList(newOpsi);
+                        const newOpsi = [...opsiList]
+                        newOpsi[i] = e.target.value
+                        setOpsiList(newOpsi)
                       }}
                     />
                     <input
@@ -189,44 +230,61 @@ export default function SoalDetail() {
                       onChange={() => setJawabanBenar(i)}
                       checked={jawabanBenar === i}
                     />
-                    <Text>Benar</Text>
+                    <Text fontSize="sm">Benar</Text>
                     {opsiList.length > 4 && (
-                      <Button size="sm" colorScheme="red" onClick={() => {
-                        const newList = opsiList.filter((_, idx) => idx !== i);
-                        setOpsiList(newList);
-                        if (jawabanBenar === i) setJawabanBenar(null);
-                        else if (jawabanBenar > i) setJawabanBenar(jawabanBenar - 1);
-                      }}>
+                      <Button
+                        size="xs"
+                        colorScheme="red"
+                        onClick={() => {
+                          const newList = opsiList.filter((_, idx) => idx !== i)
+                          setOpsiList(newList)
+                          if (jawabanBenar === i) setJawabanBenar(null)
+                          else if (jawabanBenar > i) setJawabanBenar(jawabanBenar - 1)
+                        }}
+                      >
                         X
                       </Button>
                     )}
-                  </Stack>
+                  </Flex>
                 ))}
               </Box>
               <Button
                 size="sm"
-                mt={2}
                 onClick={() => {
-                  if (opsiList.length < 5) setOpsiList([...opsiList, ""]);
+                  if (opsiList.length < 5) setOpsiList([...opsiList, ""])
                 }}
                 isDisabled={opsiList.length >= 5}
               >
                 Tambah Opsi
               </Button>
-
             </Stack>
           </ModalBody>
           <ModalFooter>
             <Button colorScheme="teal" onClick={handleSimpan}>
-              {editId ? "Update" : "Simpan"}
+              {editId ? 'Update' : 'Simpan'}
             </Button>
             <Button onClick={() => {
-              setEditId(null);
-              onClose();
-            }} ml={3}>Batal</Button>
+              setEditId(null)
+              onClose()
+            }} ml={3}>
+              Batal
+            </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
+      <ConfirmDialog
+        isOpen={isDeleteOpen}
+        onClose={onDeleteClose}
+        onConfirm={() => {
+          handleDelete(selectedId);
+          onDeleteClose();
+          setSelectedId(null);
+        }}
+        title="Hapus Pertanyaan"
+        description="Pertanyaan akan dihapus secara permanen. Lanjutkan?"
+      />
+
     </Box>
+
   );
 }
